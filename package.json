@@ -10,7 +10,12 @@
     "format": "biome format --write",
     "prepare": "husky",
     "lint:fix": "biome check --write",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "e2e": "playwright test",
+    "preview": "playwright test e2e/previews.spec.ts",
+    "e2e:ui": "playwright test --ui",
+    "e2e:headed": "playwright test --headed --project=desktop"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -26,13 +31,20 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/turbopack": "4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.9",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.3.0",
     "husky": "^9.1.7",
+    "jsdom": "^31.0.0",
     "tailwindcss": "4.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.0"
   },
   "packageManager": "pnpm@10.24.0"
 }
