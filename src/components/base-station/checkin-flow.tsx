@@ -8,6 +8,7 @@ import { CheckinMood } from "@/components/base-station/checkin-mood";
 import { CheckinSchedule } from "@/components/base-station/checkin-schedule";
 import { CheckinStepper } from "@/components/base-station/checkin-stepper";
 import { ReactionTest } from "@/components/base-station/reaction-test";
+import { Button } from "@/components/ui/button";
 import { getCrew, MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
 import type { Checkin } from "@/lib/schemas";
@@ -15,7 +16,8 @@ import type { Checkin } from "@/lib/schemas";
 export function CheckinFlow({ crewId }: { crewId: string }) {
   const crew = getCrew(crewId);
   const { state, dispatch } = useMission();
-  const [step, setStep] = useState(1);
+  // Already logged today: open on the summary instead of starting over.
+  const [step, setStep] = useState(() => (state.checkins[crewId] ? 5 : 1));
   const [checkin, setCheckin] = useState<Checkin | null>(null);
   if (!crew) return null;
 
@@ -60,7 +62,18 @@ export function CheckinFlow({ crewId }: { crewId: string }) {
               }}
             />
           )}
-          {step === 5 && <CheckinDone crew={crew} />}
+          {step === 5 && (
+            <>
+              <CheckinDone crew={crew} />
+              <Button
+                variant="ghost"
+                className="mt-2 min-h-11"
+                onClick={() => setStep(1)}
+              >
+                Redo check-in
+              </Button>
+            </>
+          )}
         </section>
         <CheckinSchedule />
       </div>

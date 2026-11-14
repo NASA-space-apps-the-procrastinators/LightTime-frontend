@@ -127,7 +127,10 @@ export function CheckinMood({
           inputMode="decimal"
           step="0.1"
           value={sleep}
-          onChange={(e) => setSleep(e.target.value)}
+          onChange={(e) => {
+            setSleep(e.target.value);
+            setErrors(({ sleep_h: _, ...rest }) => rest);
+          }}
           aria-invalid={Boolean(errors.sleep_h)}
           aria-describedby={
             errors.sleep_h ? `${id}-sleep_h-err` : `${id}-sleep-hint`
@@ -198,6 +201,7 @@ export function CheckinMood({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           aria-invalid={Boolean(errors.note)}
+          aria-describedby={errors.note ? `${id}-note-err` : undefined}
           className="rounded-lg border border-input bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-alert"
         />
         <p className="text-xs text-muted-foreground">{note.length} / 500</p>

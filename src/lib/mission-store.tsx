@@ -179,7 +179,8 @@ export function missionReducer(
     case "toggleSound":
       return { ...state, soundOn: !state.soundOn };
     case "completeCheckin": {
-      const first = !state.checkins[action.crewId];
+      // The streak is the crew's: it rises with the first check-in of the day.
+      const first = Object.keys(state.checkins).length === 0;
       return {
         ...state,
         streak: first ? state.streak + 1 : state.streak,
