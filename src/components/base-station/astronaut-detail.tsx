@@ -23,7 +23,7 @@ import { metricLabel, metricUnit } from "@/lib/format";
 import { sevenDay } from "@/lib/history";
 import { useMission } from "@/lib/mission-store";
 import type { MetricKey } from "@/lib/schemas";
-import { bandFor, crewState } from "@/lib/scoring";
+import { bandFor, crewState, metricStates } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 
 export function AstronautDetail({ crewId }: { crewId: string }) {
@@ -139,6 +139,11 @@ export function AstronautDetail({ crewId }: { crewId: string }) {
                 band={bandFor(chartMetric, crew.baseline)}
                 unit={metricUnit(chartMetric)}
                 label={metricLabel(chartMetric)}
+                outState={
+                  metricStates(crew)[chartMetric] === "WATCH"
+                    ? "WATCH"
+                    : "ALERT"
+                }
               />
             </div>
           )}

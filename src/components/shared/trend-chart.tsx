@@ -1,4 +1,4 @@
-import type { Band } from "@/lib/schemas";
+import type { Band, State } from "@/lib/schemas";
 
 const DAYS = ["-6 d", "-5 d", "-4 d", "-3 d", "-2 d", "-1 d", "Today"];
 
@@ -9,12 +9,15 @@ export function TrendChart({
   unit,
   label,
   compact = false,
+  outState = "ALERT",
 }: {
   series: number[];
   band: Band | null;
   unit: string;
   label: string;
   compact?: boolean;
+  /** Colour for out-of-band days: the metric's own state. */
+  outState?: Exclude<State, "OK">;
 }) {
   const H = compact ? 40 : 180;
   const padY = compact ? 5 : 12;
@@ -81,7 +84,15 @@ export function TrendChart({
           cx={`${x(i)}%`}
           cy={y(v)}
           r={compact ? 2.5 : 4.5}
-          fill={isOut(v) ? "var(--color-alert)" : "var(--color-ok)"}
+          fill={
+            band === null
+              ? "var(--color-muted-foreground)" // no band, so no in/out to colour
+              : isOut(v)
+                ? outState === "WATCH"
+                  ? "var(--color-watch)"
+                  : "var(--color-alert)"
+                : "var(--color-ok)"
+          }
           stroke="var(--color-card)"
           strokeWidth={compact ? 1 : 2}
         />

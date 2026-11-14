@@ -54,7 +54,7 @@ export function CheckinCapture({
                 "flex items-center gap-3 rounded-lg border px-3 py-2.5",
                 state === "OK"
                   ? "border-border-soft bg-tile"
-                  : "border-watch/60 bg-watch-bg/40",
+                  : "border-border-strong bg-card",
               )}
             >
               <div className="min-w-0 flex-1">
