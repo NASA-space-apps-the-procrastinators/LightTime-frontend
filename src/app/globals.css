@@ -107,3 +107,23 @@
     @apply font-sans;
   }
 }
+
+/* ALERT card pulse: 1200 ms (design-tokens.json motion.alert_pulse_ms). */
+@keyframes alert-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(220 38 38 / 0);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgb(220 38 38 / 0.28);
+  }
+}
+.alert-pulse {
+  animation: alert-pulse 1200ms ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .alert-pulse {
+    animation: none;
+    box-shadow: 0 0 0 3px rgb(220 38 38 / 0.35);
+  }
+}
