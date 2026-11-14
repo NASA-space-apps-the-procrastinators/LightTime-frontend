@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { meanReaction } from "@/lib/reaction";
+import { MAX_MS, MIN_MS, meanReaction } from "@/lib/reaction";
 import { cn } from "@/lib/utils";
 
 const TEST_MS = 180_000;
@@ -19,12 +19,15 @@ export function ReactionTest({
   const [message, setMessage] = useState(
     "Wait for the square to turn blue, then tap it.",
   );
+  const [timeUp, setTimeUp] = useState(false);
   const litAt = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mean = meanReaction(times);
+  const valid = times.filter((t) => t >= MIN_MS && t <= MAX_MS).length;
 
   const arm = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
+    setLit(false);
     // A random 2 to 6 s wait, so the tap cannot be anticipated.
     timer.current = setTimeout(
       () => {
@@ -49,19 +52,25 @@ export function ReactionTest({
     const id = setTimeout(() => {
       const m = meanReaction(latest.current.times);
       if (m !== null) latest.current.onDone(m);
+      else {
+        if (timer.current) clearTimeout(timer.current);
+        setLit(false);
+        setTimeUp(true);
+      }
     }, TEST_MS);
     return () => clearTimeout(id);
   }, []);
 
   const tap = () => {
+    if (timeUp) return;
     if (!lit) {
-      setMessage("Too early");
+      setMessage("Too early. Wait for blue.");
+      arm(); // restart the wait, so blind tapping cannot score
       return;
     }
     const ms = Math.round(performance.now() - litAt.current);
     setTimes((t) => [...t, ms]);
-    setMessage(`${ms} ms`);
-    setLit(false);
+    setMessage(ms > MAX_MS ? `Too slow (${ms} ms), not counted.` : `${ms} ms`);
     arm();
   };
 
@@ -76,16 +85,13 @@ export function ReactionTest({
       </p>
       <button
         type="button"
+        disabled={timeUp}
         aria-label={lit ? "Reaction target, tap now" : "Reaction target, wait"}
         onPointerDown={tap}
-        onKeyDown={(e) => {
-          if (e.key === " " || e.key === "Enter") {
-            e.preventDefault();
-            tap();
-          }
-        }}
+        // Keyboard and assistive tech fire a click with no pointer (detail 0); a mouse or touch already counted on pointerdown.
+        onClick={(e) => e.detail === 0 && tap()}
         className={cn(
-          "flex h-48 w-full touch-manipulation select-none items-center justify-center rounded-xl border-2 text-lg font-bold transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-56",
+          "flex h-48 w-full touch-manipulation select-none items-center justify-center rounded-xl border-2 text-lg font-bold transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60 sm:h-56",
           lit
             ? "border-primary bg-primary text-primary-foreground"
             : "border-dashed border-border-strong bg-tile text-muted-foreground",
@@ -94,14 +100,15 @@ export function ReactionTest({
         {lit ? "Tap!" : "Wait…"}
       </button>
       <p aria-live="polite" className="text-sm font-medium">
-        {message}
+        {timeUp
+          ? "Time is up with fewer than 3 valid taps. Restart the test to try again."
+          : message}
       </p>
       <p className="text-xs text-muted-foreground">
-        Valid taps: {times.filter((t) => t >= 100 && t <= 3000).length} (3
-        needed)
+        Valid taps: {valid} (3 needed)
         {mean !== null && ` · mean so far ${mean} ms`}
       </p>
-      <div>
+      <div className="flex flex-wrap gap-2">
         <Button
           disabled={mean === null}
           onClick={() => mean !== null && onDone(mean)}
@@ -109,6 +116,20 @@ export function ReactionTest({
         >
           Finish test
         </Button>
+        {timeUp && (
+          <Button
+            variant="outline"
+            className="min-h-11"
+            onClick={() => {
+              setTimes([]);
+              setTimeUp(false);
+              setMessage("Wait for the square to turn blue, then tap it.");
+              arm();
+            }}
+          >
+            Restart test
+          </Button>
+        )}
       </div>
     </div>
   );
