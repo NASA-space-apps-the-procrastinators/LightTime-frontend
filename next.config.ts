@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
+  devIndicators: false,
+  experimental: {
+    // The console renders from browser-only demo state, so there is no server shell to validate.
+    instantInsights: { validationLevel: "manual-warning" },
+  },
   turbopack: {
     rules: {
       "*.css": {

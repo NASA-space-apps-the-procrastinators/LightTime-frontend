@@ -1,0 +1,128 @@
+{
+  "$comment": "Light Time state rules. OK = inside the crewmember's baseline band. WATCH = outside the band once (silent). ALERT = any 'alert' condition below (red, pulse, beep until acknowledged). Every number is traceable to the NASA source named in 'source'. Baseline bands are per crewmember (see crew-seed.json).",
+  "states": ["OK", "WATCH", "ALERT"],
+  "escalation": {
+    "watch_to_alert_days_out_of_band": 3,
+    "symptom_plus_out_of_band": "ALERT",
+    "alert_beep_interval_ms": 2500,
+    "alert_push": true,
+    "watch_push": "silent",
+    "ok_push": false
+  },
+  "indicators": {
+    "heart_rate_rest": {
+      "tier": "A1", "unit": "bpm", "cadence": "continuous, 1 packet/min",
+      "watch": "outside baseline band",
+      "alert": "resting HR > baseline + 20 bpm for 3 consecutive days",
+      "exercise_target_pct_hrmax": [70, 100],
+      "source": "OCHMO Exercise Overview brief (TB-031); Cardiovascular evidence report"
+    },
+    "spo2": {
+      "tier": "A2", "unit": "%", "cadence": "continuous",
+      "watch": "below baseline band",
+      "alert": "< 94",
+      "source": "Hypoxia and DCS evidence report 2024"
+    },
+    "blood_pressure": {
+      "tier": "A3", "unit": "mmHg", "cadence": "cuff at check-in and on demand",
+      "watch": "outside pre-flight range on one cuff reading",
+      "alert": "outside pre-flight range on two cuff readings",
+      "source": "OCHMO Orthostatic Intolerance brief (TB-019)"
+    },
+    "respiratory_rate": {
+      "tier": "A4", "unit": "/min", "cadence": "continuous",
+      "watch": "> 20 at rest",
+      "alert": "> 20 at rest with CO2 above 4.5 mmHg or symptom",
+      "source": "OCHMO Carbon Dioxide brief (TB-004)"
+    },
+    "core_temperature": {
+      "tier": "A5", "unit": "°C", "cadence": "1/min",
+      "watch": "above baseline band",
+      "alert": "> 38.0",
+      "source": "Clinical fever threshold; NASA-STD-3001 V1 3004 vital-sign trending"
+    },
+    "radiation_daily_dose": {
+      "tier": "A7", "unit": "mSv/day", "cadence": "1/min, summed daily",
+      "watch": "SEP event in DONKI (shelter advisory)",
+      "alert": "> 2 mSv in a day",
+      "career_limit_mSv": 600,
+      "source": "NASA-STD-3001 Rev C career limit; OCHMO Radiation Protection brief (TB-020); DONKI"
+    },
+    "sleep_hours": {
+      "tier": "B1", "unit": "h", "cadence": "daily",
+      "watch": "< 6.5",
+      "alert": "three nights < 6",
+      "source": "HRP Sleep evidence report; OCHMO Circadian Desynchrony brief (MTB-009)"
+    },
+    "mood": {
+      "tier": "B2", "unit": "1-5", "cadence": "daily",
+      "watch": "<= 2 two days running",
+      "alert": "<= 2 with a symptom or sleep ALERT",
+      "source": "OCHMO Behavioral Health brief (TB-016); Behavioral Medicine evidence report 2025"
+    },
+    "reaction_time_pvt": {
+      "tier": "B2", "unit": "ms", "cadence": "daily, 3-minute test",
+      "watch": "mean > baseline + 15%",
+      "alert": "mean > baseline + 30% with sleep WATCH or ALERT",
+      "source": "CSA PRET dataset (PVT files) for distributions; HRP Sleep evidence report"
+    },
+    "blood_glucose_fasting": {
+      "tier": "B3", "unit": "mg/dL", "cadence": "weekly, fasting",
+      "watch": "outside 70-110",
+      "alert": "< 60 or > 180",
+      "source": "Standard clinical ranges; OSDR Inspiration4 OSD-575 metabolic panel"
+    },
+    "hydration": {
+      "tier": "B4", "unit": "mL/day", "cadence": "each meal",
+      "watch": "under target for a week",
+      "alert": "under target for a week with urine colour >= 5 or renal symptom",
+      "source": "OCHMO Food and Nutrition brief (TB-013); Renal Stone risk page"
+    },
+    "nutrition_intake": {
+      "tier": "B5", "unit": "% of target", "cadence": "each meal",
+      "watch": "< 80% of target for a week",
+      "alert": "< 70% of target for two weeks",
+      "source": "OCHMO Food and Nutrition brief (TB-013)"
+    },
+    "exercise_minutes_week": {
+      "tier": "B6", "unit": "min/week", "cadence": "per session",
+      "prescribed": 600,
+      "watch": "20% drop from prescribed",
+      "alert": "40% drop from prescribed for two weeks",
+      "source": "OCHMO Exercise Overview brief (TB-031)"
+    },
+    "vo2max_pct_preflight": {
+      "tier": "C1", "unit": "% of pre-flight", "cadence": "monthly",
+      "watch": "< 85",
+      "alert": "< 80",
+      "floors_ml_min_kg": {"microgravity_eva": 32.9, "surface_eva": 36.5},
+      "source": "OCHMO Exercise Overview brief (TB-031); Aerobic and Muscle evidence report 2024"
+    },
+    "strength_pct_preflight": {
+      "tier": "C1", "unit": "% of pre-flight", "cadence": "weekly",
+      "watch": "< 85",
+      "alert": "< 80",
+      "source": "OCHMO Exercise Overview brief; Aerobic and Muscle evidence report 2024"
+    },
+    "bone_bmd_pct_premission": {
+      "tier": "C4", "unit": "% of pre-mission", "cadence": "monthly estimate",
+      "watch": "< 97",
+      "alert": "< 95 or T-score < -2.0",
+      "vitamin_d_25oh_ng_ml": [35, 90],
+      "source": "OCHMO Bone Loss brief (MTB-013)"
+    },
+    "cabin_co2": {
+      "tier": "D1", "unit": "mmHg", "cadence": "continuous (EDA replay)",
+      "standard_max_1h_avg": 3.0,
+      "watch": ">= 2.8 (headaches reported 2.8-4.5)",
+      "alert": ">= 4.5 (fatigue, nausea)",
+      "source": "OCHMO Carbon Dioxide brief (TB-004); NASA-STD-3001"
+    },
+    "space_weather": {
+      "tier": "D2", "unit": "event", "cadence": "daily poll",
+      "watch": "DONKI SEP event in the last 24 h (shelter advisory)",
+      "alert": "SEP event + personal dose > 2 mSv/day",
+      "source": "DONKI SEP/FLR/RBE; OCHMO Radiation Protection brief"
+    }
+  }
+}

@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# playwright
+/test-results/
+/playwright-report/
+/previews/
+
+# superpowers scratch
+/.superpowers/
+
+# kept local, not committed (Damola, 2026-11-14)
+*.test.ts
+*.test.tsx
+/e2e/
+/docs/superpowers/
+/docs/backend-api-contract.md
