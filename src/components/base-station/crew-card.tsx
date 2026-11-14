@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
+import { clock } from "@/lib/format";
 import { useMission } from "@/lib/mission-store";
 import type { Crew, State } from "@/lib/schemas";
 import { crewState, metricStates, worst } from "@/lib/scoring";
@@ -58,6 +59,8 @@ export function CrewCard({ crew }: { crew: Crew }) {
   const { state } = useMission();
   const s = metricStates(crew);
   const overall = crewState(crew);
+  // shortcut: suits send one packet a minute, so the last one is this minute; read it from packets once the log exists.
+  const lastPacket = clock(new Date().toISOString());
   const t = crew.today;
   const checkedIn = Boolean(state.checkins[crew.id]);
   const needsCheckin = crew.id === "C1" && !checkedIn;
@@ -91,7 +94,7 @@ export function CrewCard({ crew }: { crew: Crew }) {
               {crew.name}
             </Link>
             <div className="truncate text-[11px] text-muted-foreground">
-              {crew.role} · suit {crew.suit_id}
+              {crew.role} · suit {crew.suit_id} · last packet {lastPacket}
             </div>
           </div>
           <StatePill state={overall} />

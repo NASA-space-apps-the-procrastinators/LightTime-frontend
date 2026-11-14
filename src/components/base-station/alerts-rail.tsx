@@ -119,6 +119,14 @@ export function AlertsRail() {
             {done.length} / {CREW.length} done
           </span>
         </div>
+        {due && (
+          <div className="text-[13px] text-muted-foreground">
+            Due:{" "}
+            {CREW.filter((c) => !done.includes(c))
+              .map((c) => c.name)
+              .join(", ")}
+          </div>
+        )}
         <div className="flex justify-between py-1.5 text-[13px]">
           <span>Weekly strength test</span>
           <span className="text-muted-foreground">due Fri</span>
