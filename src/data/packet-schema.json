@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Light Time suit packet",
+  "description": "One packet per metric per minute from the suit gateway (continuous streams), or one per event (cuff reading, check-in answer, test result). The dashboard service attaches 'baseline', 'rule' and 'state' on arrival, then logs it and fans out over WebSocket (SSE fallback).",
+  "type": "object",
+  "required": ["crew_id", "suit_id", "ts", "mission_day", "source", "metric", "value", "unit", "signal_quality"],
+  "properties": {
+    "crew_id": {"type": "string", "examples": ["C1"]},
+    "suit_id": {"type": "string", "examples": ["LT-01"]},
+    "ts": {"type": "string", "format": "date-time"},
+    "mission_day": {"type": "integer"},
+    "location": {"type": "string", "examples": ["ISS", "Node 2"]},
+    "source": {"type": "string", "enum": ["ecg", "ppg", "cuff", "thermistor", "chest_band", "imu", "dosimeter", "checkin", "pvt", "lab", "station", "donki", "radlab"]},
+    "metric": {"type": "string", "examples": ["hr_rest", "spo2", "bp_sys", "bp_dia", "resp", "temp_c", "sleep_h", "mood", "pvt_ms", "dose_mSv", "co2_mmHg"]},
+    "value": {"type": ["number", "string", "array"]},
+    "unit": {"type": "string"},
+    "signal_quality": {"type": "number", "minimum": 0, "maximum": 1, "description": "0-1; readings under 0.6 are shown as RECHECK and never trip ALERT on their own"},
+    "window_s": {"type": "integer", "description": "Seconds summarised into this packet (60 for continuous streams)"},
+    "baseline": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2, "description": "Attached by the dashboard: the crewmember's OK band for this metric"},
+    "rule": {"type": "string", "description": "Attached by the dashboard: the rule that applied, e.g. 'resting HR > baseline+20 for 3 days'"},
+    "state": {"type": "string", "enum": ["OK", "WATCH", "ALERT", "RECHECK"]},
+    "sent_to_ground": {"type": "boolean"},
+    "ack": {"type": ["string", "null"], "format": "date-time", "description": "When an ALERT was acknowledged on the console or from a push notification"}
+  },
+  "examples": [
+    {"crew_id": "C1", "suit_id": "LT-01", "ts": "2026-11-14T06:12:00Z", "mission_day": 158, "location": "ISS", "source": "ecg", "metric": "hr_rest", "value": 84, "unit": "bpm", "signal_quality": 0.93, "window_s": 60, "baseline": [52, 64], "rule": "resting HR > baseline+20 for 3 days", "state": "ALERT", "sent_to_ground": false, "ack": null}
+  ]
+}
