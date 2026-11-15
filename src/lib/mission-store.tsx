@@ -12,6 +12,7 @@ import {
 import { z } from "zod";
 import { GROUND, getCrew } from "@/lib/crew";
 import { type Checkin, checkinSchema, METRIC_KEYS } from "@/lib/schemas";
+import { shipAlertSchema } from "@/lib/ship-api";
 
 const STAGES = [
   "raised",
@@ -33,6 +34,8 @@ const alertSchema = z.object({
   replyAt: iso.nullable(),
   resolvedAt: iso.nullable(),
   symptoms: z.array(z.string()),
+  /** The alert exactly as the ship sent it. Only in live mode. */
+  live: shipAlertSchema.optional(),
 });
 const threadMessageSchema = z.object({
   id: z.string(),
@@ -40,6 +43,9 @@ const threadMessageSchema = z.object({
   author: z.string(),
   text: z.string(),
   at: iso,
+  /** Only in live mode: which alert it belongs to, and where it is on the link. */
+  alertId: z.string().optional(),
+  status: z.enum(["queued", "in_flight", "delivered"]).optional(),
 });
 const reminderSchema = z.object({
   id: z.string(),
@@ -79,7 +85,13 @@ export type Action =
   | { type: "sendToGround"; alertId: string; at: string }
   | { type: "receiveReply"; alertId: string; at: string }
   | { type: "acceptPlan"; alertId: string; at: string }
-  | { type: "postMessage"; text: string; author: string; at: string }
+  | {
+      type: "postMessage";
+      text: string;
+      author: string;
+      at: string;
+      alertId?: string;
+    }
   | { type: "reset" };
 
 export const STORAGE_KEY = "light-time:mission:v1";
