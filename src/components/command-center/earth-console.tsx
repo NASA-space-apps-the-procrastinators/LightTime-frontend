@@ -83,9 +83,28 @@ export function EarthConsole() {
 
   if (!LIVE)
     return (
-      <p className="p-8 text-sm">
-        Set NEXT_PUBLIC_API_URL to the ship's address to open the Earth console.
-      </p>
+      <main className="mx-auto flex max-w-xl flex-col gap-3 p-8 text-sm">
+        <h1 className="font-heading text-xl font-semibold">Earth console</h1>
+        <p>
+          Set NEXT_PUBLIC_API_URL to the ship's address to open the Earth
+          console.
+        </p>
+        <p className="text-muted-foreground">
+          For a ship on this machine, put{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            NEXT_PUBLIC_API_URL=http://localhost:5001
+          </code>{" "}
+          in <code className="font-mono text-xs">.env.local</code> and restart
+          the console. The address is read when the console starts. Run the ship
+          on port 5001: on a Mac, port 5000 belongs to AirPlay.
+        </p>
+        <Link
+          href="/base-station"
+          className="inline-flex min-h-11 items-center text-link"
+        >
+          ← Back to the crew console
+        </Link>
+      </main>
     );
   if (!inbox)
     return (

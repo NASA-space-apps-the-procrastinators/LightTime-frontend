@@ -2,6 +2,7 @@
 
 import {
   ClipboardCheck,
+  Ellipsis,
   Globe,
   RotateCcw,
   ScrollText,
@@ -13,10 +14,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useId, useRef } from "react";
 import { Dial } from "@/components/base-station/dial";
 import { NotifyButton } from "@/components/base-station/notify-button";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { Button } from "@/components/ui/button";
+import { clearNotifications } from "@/hooks/use-notifications";
 import { MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
 import { LIVE, ship as shipApi, span } from "@/lib/ship-api";
@@ -54,13 +57,18 @@ export function AppHeader() {
   const [lo, hi] = MISSION.mars_light_time_min;
   const audioAvailable = typeof globalThis.AudioContext === "function";
   const soundOn = audioAvailable && state.soundOn;
+  const menuId = useId();
+  const menu = useRef<HTMLDivElement>(null);
   const restart = () => {
+    clearNotifications();
     dispatch({ type: "reset" });
     router.push("/base-station");
   };
-  const nav = LIVE
-    ? [...NAV, { label: "Earth", href: "/command-center", icon: Globe }]
-    : NAV;
+  // Earth is always in the nav: without a ship address its page says how to connect one.
+  const nav = [
+    ...NAV,
+    { label: "Earth", href: "/command-center", icon: Globe },
+  ];
 
   return (
     <header className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8">
@@ -113,19 +121,83 @@ export function AppHeader() {
         })}
       </nav>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground md:ml-auto">
+      <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-muted-foreground">
         {LIVE && !online && (
           <span className="font-semibold text-alert">
             Ship unreachable: built-in demo
           </span>
         )}
-        <span className="hidden md:inline">
-          {ship?.platform ?? MISSION.platform} · Mission day{" "}
-          <strong className="text-foreground">
-            {ship?.mission_day ?? MISSION.mission_day}
-          </strong>
-        </span>
-        {ship ? (
+        {!ship && (
+          <>
+            <span className="hidden md:inline">
+              {MISSION.platform} · Mission day{" "}
+              <strong className="text-foreground">{MISSION.mission_day}</strong>
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1">
+              <span aria-hidden className="size-1.5 rounded-full bg-ok" />
+              Ground link {MISSION.one_way_light_time_s} s one-way
+              <span className="hidden xl:inline">
+                {" "}
+                (Mars: {lo} to {hi} min)
+              </span>
+            </span>
+          </>
+        )}
+        <SimulatedTag />
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={!audioAvailable}
+          aria-label="Alert sound"
+          aria-pressed={soundOn}
+          title={
+            audioAvailable
+              ? `Alert beep on the console: ${soundOn ? "on" : "off"}`
+              : "Sound is not available in this browser"
+          }
+          onClick={() => dispatch({ type: "toggleSound" })}
+          className="size-11 md:size-9"
+        >
+          {soundOn ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="More"
+          popoverTarget={menuId}
+          className="size-11 md:size-9"
+        >
+          <Ellipsis aria-hidden />
+        </Button>
+        {/* Native popover: light dismiss and Escape for free; pinned under the header's right edge. */}
+        <div
+          id={menuId}
+          ref={menu}
+          popover="auto"
+          className="fixed inset-auto top-16 right-4 m-0 w-60 rounded-xl border border-border bg-card p-1.5 text-sm text-foreground shadow-lg md:right-8"
+        >
+          <NotifyButton variant="ghost" className="h-11 w-full justify-start" />
+          <Button
+            variant="ghost"
+            onClick={() => {
+              menu.current?.hidePopover?.();
+              restart();
+            }}
+            className="h-11 w-full justify-start"
+          >
+            <RotateCcw aria-hidden />
+            Restart demo
+          </Button>
+        </div>
+      </div>
+
+      {ship && (
+        // Live: the link gets its own row, so the dial and the story never squeeze the nav.
+        <div className="order-last flex w-full flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-soft pt-2.5 text-[13px] text-muted-foreground">
+          <span className="hidden md:inline">
+            {ship.platform} · Mission day{" "}
+            <strong className="text-foreground">{ship.mission_day}</strong>
+          </span>
           <span
             className={cn(
               "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1",
@@ -142,30 +214,19 @@ export function AppHeader() {
             {ship.link_up
               ? `Earth is ${span(ship.delay_s)} away · earliest reply ${span(ship.round_trip_s)}`
               : "No link to Earth"}
-            <span className="hidden xl:inline"> · {ship.who_decides}</span>
+            <span className="hidden lg:inline"> · {ship.who_decides}</span>
             {ship.link_up && ship.delay_s >= 60 && (
-              <span className="hidden text-[11px] xl:inline">
+              <span className="hidden text-[11px] lg:inline">
                 {" "}
                 (plays as {span(ship.plays_as_s)})
               </span>
             )}
           </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1">
-            <span aria-hidden className="size-1.5 rounded-full bg-ok" />
-            Ground link {MISSION.one_way_light_time_s} s one-way
-            <span className="hidden xl:inline">
-              {" "}
-              (Mars: {lo} to {hi} min)
-            </span>
-          </span>
-        )}
-        <Dial />
-        {ship && (
+          <Dial />
           <Button
             variant="outline"
             size="sm"
-            className="min-h-11 md:min-h-9"
+            className="min-h-11 md:ml-auto md:min-h-9"
             title="Play the scripted emergency: blood oxygen falls for the commander"
             // "full": the oxygen drifts down first, so LIGHTTIME's time-left warning comes before
             // the SOS. "stage" drops at once and gives no time left.
@@ -177,34 +238,8 @@ export function AppHeader() {
           >
             Start story
           </Button>
-        )}
-        <SimulatedTag />
-        <NotifyButton />
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!audioAvailable}
-          title={
-            audioAvailable
-              ? "Alert beep on the console"
-              : "Sound is not available in this browser"
-          }
-          onClick={() => dispatch({ type: "toggleSound" })}
-          className="min-h-11 md:min-h-9"
-        >
-          {soundOn ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
-          {soundOn ? "Sound on" : "Sound off"}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={restart}
-          className="min-h-11 md:min-h-9"
-        >
-          <RotateCcw aria-hidden />
-          Restart demo
-        </Button>
-      </div>
+        </div>
+      )}
     </header>
   );
 }
