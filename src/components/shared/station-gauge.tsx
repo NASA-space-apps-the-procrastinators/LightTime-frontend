@@ -19,17 +19,20 @@ const arc = (f0: number, f1: number) => {
 export function StationGauge({
   label,
   value,
+  needleValue,
   unit,
   gauge,
 }: {
   label: string;
   value: number;
+  /** Where the needle is drawn, if it differs from value while animating; the name always uses value. */
+  needleValue?: number;
   unit: string;
   gauge: Gauge;
 }) {
   const { min, max, band, marks } = gauge;
   const frac = (v: number) => Math.min(1, Math.max(0, (v - min) / (max - min)));
-  const f = frac(value);
+  const f = frac(needleValue ?? value);
   const where =
     value < band[0] ? "below" : value > band[1] ? "above" : "within";
   const name =
