@@ -9,7 +9,7 @@ export function Dial() {
   const { ship, refresh } = useMission();
   if (!ship) return null;
   return (
-    <fieldset className="flex flex-wrap items-center gap-1.5">
+    <fieldset className="flex shrink-0 items-center gap-1.5 md:flex-wrap md:shrink">
       <legend className="sr-only">Where the ship is</legend>
       {ship.stops.map((s) => {
         const here = s.stop === ship.stop;
@@ -24,7 +24,7 @@ export function Dial() {
                 .then(refresh, refresh)
             }
             className={cn(
-              "min-h-9 rounded-md border px-2.5 py-1 text-[13px]",
+              "min-h-9 whitespace-nowrap rounded-md border px-2.5 py-1 text-[13px]",
               here
                 ? "border-primary font-semibold text-foreground"
                 : "border-border text-muted-foreground hover:text-foreground",

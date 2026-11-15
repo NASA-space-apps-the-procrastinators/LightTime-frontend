@@ -18,7 +18,7 @@ import { useId, useRef } from "react";
 import { Dial } from "@/components/base-station/dial";
 import { NotifyButton } from "@/components/base-station/notify-button";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { clearNotifications } from "@/hooks/use-notifications";
 import { MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
@@ -64,14 +64,15 @@ export function AppHeader() {
     dispatch({ type: "reset" });
     router.push("/base-station");
   };
-  // Earth is always in the nav: without a ship address its page says how to connect one.
+  // Earth is always reachable: without a ship address its page says how to connect one.
+  // Phones keep it out of the tab bar (five tabs fit) and show it as a button at the top right.
   const nav = [
     ...NAV,
     { label: "Earth", href: "/command-center", icon: Globe },
   ];
 
   return (
-    <header className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8">
+    <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8">
       <Link href="/base-station" className="flex min-h-11 items-center gap-2.5">
         <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
           <circle
@@ -112,6 +113,7 @@ export function AppHeader() {
                 active
                   ? "border-primary text-primary md:font-semibold md:text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",
+                item.href === "/command-center" && "max-md:hidden",
               )}
             >
               <item.icon aria-hidden className="size-5 md:hidden" />
@@ -121,7 +123,8 @@ export function AppHeader() {
         })}
       </nav>
 
-      <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-muted-foreground">
+      {/* Phones: the buttons stay on the logo's row and this info drops to its own line. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-muted-foreground max-md:order-1 max-md:w-full md:ml-auto">
         {LIVE && !online && (
           <span className="font-semibold text-alert">
             Ship unreachable: built-in demo
@@ -144,6 +147,20 @@ export function AppHeader() {
           </>
         )}
         <SimulatedTag />
+      </div>
+
+      <div className="flex items-center gap-3 max-md:ml-auto">
+        <Link
+          href="/command-center"
+          aria-label="Earth console"
+          title="Earth console"
+          className={cn(
+            buttonVariants({ variant: "outline", size: "icon" }),
+            "size-11 md:hidden",
+          )}
+        >
+          <Globe aria-hidden />
+        </Link>
         <Button
           variant="outline"
           size="icon"
@@ -193,14 +210,15 @@ export function AppHeader() {
 
       {ship && (
         // Live: the link gets its own row, so the dial and the story never squeeze the nav.
-        <div className="order-last flex w-full flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-soft pt-2.5 text-[13px] text-muted-foreground">
+        // Phones: one line that scrolls sideways, so the pinned header stays short.
+        <div className="order-last -mx-4 flex w-[calc(100%+2rem)] items-center gap-x-4 gap-y-2 overflow-x-auto border-t border-border-soft px-4 pt-2.5 text-[13px] text-muted-foreground md:mx-0 md:w-full md:flex-wrap md:overflow-visible md:px-0">
           <span className="hidden md:inline">
             {ship.platform} · Mission day{" "}
             <strong className="text-foreground">{ship.mission_day}</strong>
           </span>
           <span
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1",
+              "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1",
               ship.link_up ? "border-border" : "border-alert text-alert",
             )}
           >
@@ -226,7 +244,7 @@ export function AppHeader() {
           <Button
             variant="outline"
             size="sm"
-            className="min-h-11 md:ml-auto md:min-h-9"
+            className="min-h-11 shrink-0 md:ml-auto md:min-h-9"
             title="Play the scripted emergency: blood oxygen falls for the commander"
             // "full": the oxygen drifts down first, so LIGHTTIME's time-left warning comes before
             // the SOS. "stage" drops at once and gives no time left.
