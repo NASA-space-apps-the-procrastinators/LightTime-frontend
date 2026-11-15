@@ -25,7 +25,7 @@ function Chip({
       onClick={onClick}
       className={cn(
         "min-h-11 rounded-full border px-3.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-        on ? "border-primary bg-border-soft" : "border-border-strong bg-card",
+        on ? "border-active bg-border-soft" : "border-border-strong bg-card",
       )}
     >
       {label}

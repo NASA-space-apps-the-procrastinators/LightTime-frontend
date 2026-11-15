@@ -45,7 +45,7 @@ export function CheckinCuff({ onDone }: { onDone: () => void }) {
               key={i}
               className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-tile px-3 text-[13px] font-medium"
             >
-              <Icon aria-hidden className="size-4 text-primary" />
+              <Icon aria-hidden className="size-4 text-active" />
               {label}
             </li>
           ))}

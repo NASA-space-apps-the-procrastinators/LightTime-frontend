@@ -125,7 +125,7 @@ export function CheckinMood({
                 className={cn(
                   "flex h-28 cursor-pointer flex-col items-center justify-center gap-1 border-[1.5px] text-center transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50 sm:h-32",
                   on
-                    ? "border-primary bg-primary/[0.07] text-primary shadow-[0_8px_20px_-14px_var(--primary)]"
+                    ? "border-active bg-primary/[0.07] text-active shadow-[0_8px_20px_-14px_var(--primary)]"
                     : "border-border bg-card text-secondary-foreground hover:border-border-strong",
                 )}
               >
@@ -244,7 +244,7 @@ export function CheckinMood({
                   className={cn(
                     "min-h-11 border px-4 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                     on
-                      ? "border-[1.5px] border-primary bg-primary/[0.07] text-primary"
+                      ? "border-[1.5px] border-active bg-primary/[0.07] text-active"
                       : "border-border bg-card",
                   )}
                 >
@@ -262,7 +262,7 @@ export function CheckinMood({
               className={cn(
                 "min-h-11 border px-4 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                 none
-                  ? "border-[1.5px] border-primary bg-primary/[0.07] text-primary"
+                  ? "border-[1.5px] border-active bg-primary/[0.07] text-active"
                   : "border-border bg-card",
               )}
             >

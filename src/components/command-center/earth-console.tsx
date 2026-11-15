@@ -89,7 +89,7 @@ function useUtcClock(): string {
 /** The dark screen every state of this page sits on: night sky, Earth's glowing limb below. */
 function Shell({ children }: { children: ReactNode }) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#03060d] text-slate-100">
+    <main className="dark relative min-h-screen overflow-hidden bg-[#03060d] text-slate-100">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(1px_1px_at_12%_18%,#94a3b8_50%,transparent_51%),radial-gradient(1px_1px_at_68%_9%,#64748b_50%,transparent_51%),radial-gradient(1.5px_1.5px_at_41%_33%,#64748b_50%,transparent_51%),radial-gradient(1px_1px_at_87%_21%,#94a3b8_50%,transparent_51%),radial-gradient(1px_1px_at_23%_48%,#64748b_50%,transparent_51%)] [background-size:520px_520px]"
@@ -162,7 +162,7 @@ export function EarthConsole() {
           </p>
           <Link
             href="/base-station"
-            className="inline-flex min-h-11 items-center text-sky-300 hover:text-sky-200"
+            className="inline-flex min-h-11 items-center text-lime-300 hover:text-lime-200"
           >
             ← Back to the crew console
           </Link>
@@ -279,13 +279,13 @@ export function EarthConsole() {
         placeholder="Reply to the ship"
         maxLength={500}
         className={cn(
-          "h-11 min-w-0 shrink-0 rounded-full border border-white/15 bg-black/30 px-4 text-sm text-slate-100 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lime-300/50",
+          "h-11 min-w-0 shrink-0 border border-white/15 bg-black/30 px-4 text-sm text-slate-100 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lime-300/50",
           !stacked && "sm:flex-1",
         )}
       />
       <button
         type="submit"
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-lime-300 px-5 text-sm font-bold text-slate-950 hover:bg-lime-200 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lime-300/50"
+        className="inline-flex h-11 items-center justify-center gap-2 bg-lime-300 px-5 text-sm font-bold text-slate-950 hover:bg-lime-200 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lime-300/50"
       >
         <Send aria-hidden className="size-4" />
         Send, arrives in {inbox.link_up ? span(inbox.delay_s) : "no link"}
@@ -430,7 +430,7 @@ export function EarthConsole() {
             <div className="ml-auto flex items-center gap-2">
               <span
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-bold",
+                  "px-3 py-1.5 text-xs font-bold",
                   inbox.link_up
                     ? "bg-lime-300 text-slate-950"
                     : "bg-rose-500/25 text-rose-200",
@@ -438,12 +438,7 @@ export function EarthConsole() {
               >
                 {inbox.link_up ? "Link up" : "No link"}
               </span>
-              <span
-                className={cn(
-                  glass,
-                  "rounded-full px-4 py-2 text-sm tabular-nums",
-                )}
-              >
+              <span className={cn(glass, "px-4 py-2 text-sm tabular-nums")}>
                 UTC <strong className="ml-1 font-semibold">{utc}</strong>
               </span>
               <Link
@@ -452,7 +447,7 @@ export function EarthConsole() {
                 title="Ship console"
                 className={cn(
                   glass,
-                  "grid size-11 place-items-center rounded-full hover:bg-white/10",
+                  "grid size-11 place-items-center hover:bg-white/10",
                 )}
               >
                 <Rocket aria-hidden className="size-5" />
@@ -485,12 +480,7 @@ export function EarthConsole() {
               </span>
             )}
           </p>
-          <span
-            className={cn(
-              glass,
-              "rounded-full px-3 py-1.5 text-xs text-slate-200",
-            )}
-          >
+          <span className={cn(glass, "px-3 py-1.5 text-xs text-slate-200")}>
             {inbox.link_up
               ? `One way ${span(inbox.delay_s)} · ${inbox.who_decides}`
               : "Replies are queued and leave when the link returns"}
@@ -822,7 +812,7 @@ function MapLayer({
 
           {/* The ship, at the far end of the link */}
           <div
-            className="pointer-events-none absolute flex items-center gap-2 rounded-full border border-white/15 bg-[#02040a]/75 px-3 py-1.5 text-xs backdrop-blur-md"
+            className="pointer-events-none absolute flex items-center gap-2 border border-white/15 bg-[#02040a]/75 px-3 py-1.5 text-xs backdrop-blur-md"
             style={{ left: end.x + 10, top: end.y - 15 }}
           >
             <span
@@ -881,7 +871,7 @@ function MarsLink({
         </div>
         <span
           className={cn(
-            "rounded-full px-3 py-1 text-xs font-bold",
+            "px-3 py-1 text-xs font-bold",
             inbox.link_up
               ? "bg-lime-300 text-slate-950"
               : "bg-rose-500/25 text-rose-200",

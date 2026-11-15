@@ -26,7 +26,7 @@ export function Dial() {
             className={cn(
               "min-h-9 whitespace-nowrap rounded-md border px-2.5 py-1 text-[13px]",
               here
-                ? "border-primary font-semibold text-foreground"
+                ? "border-active font-semibold text-foreground"
                 : "border-border text-muted-foreground hover:text-foreground",
             )}
           >
