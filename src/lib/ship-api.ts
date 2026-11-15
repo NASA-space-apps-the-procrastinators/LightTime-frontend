@@ -179,6 +179,19 @@ export function toReminder(r: ShipReminder): Reminder {
 }
 
 /** Everything the store shows that the ship owns. Sound and this session's check-ins stay local. */
+/** The alerts whose thread the console shows: the same ones buildMission keeps. An alert resolved
+ *  this morning keeps its thread, so accepting the plan does not empty the page. */
+export function threadAlerts(alerts: ShipAlert[], now?: string): ShipAlert[] {
+  const today = (now ?? "").slice(0, 10);
+  return alerts.filter(
+    (a) =>
+      METRIC_KEYS.some((key) => key === a.metric) &&
+      (a.stage !== "resolved" ||
+        !today ||
+        a.timeline.raised_at.slice(0, 10) === today),
+  );
+}
+
 export function buildMission(input: {
   now?: string;
   alerts: ShipAlert[];
@@ -387,11 +400,9 @@ export async function pull(): Promise<{
       ship.station(),
       ship.weather(),
     ]);
-  const open = alerts.filter(
-    (a) =>
-      a.stage !== "resolved" && METRIC_KEYS.some((key) => key === a.metric),
+  const threads = await Promise.all(
+    threadAlerts(alerts, state.now).map((a) => ship.thread(a.id)),
   );
-  const threads = await Promise.all(open.map((a) => ship.thread(a.id)));
   const live = shipCrew.map(toCrew);
   // Anyone the ship's answer does not cover keeps their built-in card, so nobody drops off the board.
   const crew = [
