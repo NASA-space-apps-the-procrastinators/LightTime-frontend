@@ -6,10 +6,11 @@ import { AlertSummary } from "@/components/base-station/alert-summary";
 import { GroundThread } from "@/components/base-station/ground-thread";
 import { LightTimeCard } from "@/components/base-station/lighttime-card";
 import { RoundTrip } from "@/components/base-station/round-trip";
+import { Formula } from "@/components/shared/formula";
 import { NotFoundMessage } from "@/components/shared/not-found-message";
 import { StatePill } from "@/components/shared/state-pill";
 import { getCrew } from "@/lib/crew";
-import { clock, metricLabel } from "@/lib/format";
+import { clock, inSentence } from "@/lib/format";
 import { useMission } from "@/lib/mission-store";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export function AlertDetail({ alertId }: { alertId: string }) {
             >
               <strong>
                 {getCrew(a.crewId)?.name} ·{" "}
-                {metricLabel(a.metric).toLowerCase()}
+                <Formula>{inSentence(a.metric)}</Formula>
               </strong>
               <span className="block text-[11px] text-muted-foreground">
                 Raised {clock(a.raisedAt)} · {a.stage}

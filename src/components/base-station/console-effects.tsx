@@ -1,18 +1,23 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useAlarm } from "@/hooks/use-alarm";
 import { useGroundLink } from "@/hooks/use-ground-link";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useMission } from "@/lib/mission-store";
 
-/** Console-wide side effects: the alert beep and the delayed link to the ground. */
+/** Console-wide side effects: the alert beep, the delayed link to the ground, and alert notifications. */
 export function ConsoleEffects() {
   const { state } = useMission();
+  const onBoard = usePathname() === "/base-station";
   useAlarm(
-    state.alerts.some(
-      (a) =>
-        a.stage === "raised" || (a.live?.state === "SOS" && !a.acknowledgedAt),
-    ),
+    onBoard &&
+      state.alerts.some(
+        (a) =>
+          a.stage === "raised" ||
+          (a.live?.state === "SOS" && !a.acknowledgedAt),
+      ),
     state.soundOn,
   );
   // LIGHTTIME's sentence, spoken once per alert and level. Browsers allow speech only after a click:
@@ -30,5 +35,6 @@ export function ConsoleEffects() {
     }
   }, [state.alerts, state.soundOn]);
   useGroundLink();
+  useNotifications();
   return null;
 }

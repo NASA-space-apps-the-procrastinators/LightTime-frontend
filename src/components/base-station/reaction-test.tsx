@@ -16,9 +16,7 @@ export function ReactionTest({
 }) {
   const [lit, setLit] = useState(false);
   const [times, setTimes] = useState<number[]>([]);
-  const [message, setMessage] = useState(
-    "Wait for the square to turn blue, then tap it.",
-  );
+  const [message, setMessage] = useState("Wait for green, then tap.");
   const [timeUp, setTimeUp] = useState(false);
   const litAt = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,7 +62,7 @@ export function ReactionTest({
   const tap = () => {
     if (timeUp) return;
     if (!lit) {
-      setMessage("Too early. Wait for blue.");
+      setMessage("Too early. Wait for green.");
       arm(); // restart the wait, so blind tapping cannot score
       return;
     }
@@ -76,13 +74,15 @@ export function ReactionTest({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="font-heading text-lg font-semibold">
-        Step 4 · 3-minute reaction test
-      </h2>
-      <p className="text-sm text-secondary-foreground">
-        Tap the square the moment it turns blue. This is the vigilance test NASA
-        uses to track sleep loss. Your baseline is {baselineMs} ms.
-      </p>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h2 className="font-heading text-xl font-semibold">
+          Step 4 · Reaction test
+        </h2>
+        <span className="text-[13px] text-muted-foreground">
+          The vigilance test NASA uses to track sleep loss · your baseline is{" "}
+          {baselineMs} ms
+        </span>
+      </div>
       <button
         type="button"
         disabled={timeUp}
@@ -91,13 +91,51 @@ export function ReactionTest({
         // Keyboard and assistive tech fire a click with no pointer (detail 0); a mouse or touch already counted on pointerdown.
         onClick={(e) => e.detail === 0 && tap()}
         className={cn(
-          "flex h-48 w-full touch-manipulation select-none items-center justify-center rounded-xl border-2 text-lg font-bold transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60 sm:h-56",
-          lit
-            ? "border-primary bg-primary text-primary-foreground"
-            : "border-dashed border-border-strong bg-tile text-muted-foreground",
+          "relative flex h-72 w-full touch-manipulation select-none flex-col items-center justify-center gap-4 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60 sm:h-80",
+          lit ? "bg-[#16a34a] text-white" : "bg-[#0b1220] text-slate-100",
         )}
       >
-        {lit ? "Tap!" : "Wait…"}
+        <span className="absolute top-4 left-5 text-xs font-bold tracking-widest text-current/70">
+          {timeUp ? "TIME IS UP" : `TAP ${Math.min(valid + 1, 3)} OF 3`}
+        </span>
+        {times.length > 0 && (
+          <span className="absolute top-3.5 right-4 flex gap-2">
+            {times.slice(-3).map((t, i) => (
+              <span
+                // biome-ignore lint/suspicious/noArrayIndexKey: the last few taps, in order
+                key={i}
+                className={cn(
+                  "border px-2.5 py-1 text-xs tabular-nums",
+                  lit
+                    ? "border-white/40 bg-white/15"
+                    : "border-slate-700 bg-slate-900 text-slate-300",
+                )}
+              >
+                {t} ms
+              </span>
+            ))}
+          </span>
+        )}
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex size-32 items-center justify-center rounded-full border-[3px]",
+            lit ? "border-white bg-white/20" : "border-slate-700",
+          )}
+        >
+          <span
+            className={cn(
+              "size-4 rounded-full",
+              lit ? "bg-white" : "bg-slate-600",
+            )}
+          />
+        </span>
+        <span className="font-heading text-3xl font-semibold">
+          {lit ? "Tap!" : "Wait for green…"}
+        </span>
+        <span className="text-sm text-current/70">
+          Tap anywhere in this area the moment it turns green, or press Space.
+        </span>
       </button>
       <p aria-live="polite" className="text-sm font-medium">
         {timeUp
@@ -112,7 +150,7 @@ export function ReactionTest({
         <Button
           disabled={mean === null}
           onClick={() => mean !== null && onDone(mean)}
-          className="min-h-11"
+          className="min-h-11 px-5"
         >
           Finish test
         </Button>
@@ -123,7 +161,7 @@ export function ReactionTest({
             onClick={() => {
               setTimes([]);
               setTimeUp(false);
-              setMessage("Wait for the square to turn blue, then tap it.");
+              setMessage("Wait for green, then tap.");
               arm();
             }}
           >

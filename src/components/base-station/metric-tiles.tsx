@@ -1,12 +1,20 @@
 "use client";
 
+import { Formula } from "@/components/shared/formula";
 import { StatePill } from "@/components/shared/state-pill";
 import { REGIONS, type RegionId } from "@/data/regions";
 import { metricLabel, metricUnit } from "@/lib/format";
-import type { Crew, MetricKey } from "@/lib/schemas";
+import type { Crew, MetricKey, State } from "@/lib/schemas";
 import { bandFor, metricStates, metricValue } from "@/lib/scoring";
 import { TILE_TINT } from "@/lib/state-styles";
 import { cn } from "@/lib/utils";
+
+// The picked tile is outlined in its own state's colour, so selection never adds a clashing blue.
+const ACTIVE_RING: Record<State, string> = {
+  OK: "ring-2 ring-foreground/45",
+  WATCH: "ring-2 ring-watch",
+  ALERT: "ring-2 ring-alert",
+};
 
 function baselineText(metric: MetricKey, crew: Crew): string | null {
   const band = bandFor(metric, crew.baseline);
@@ -52,11 +60,11 @@ export function MetricTiles({
             className={cn(
               "flex min-h-11 flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
               TILE_TINT[states[m]],
-              active === m && "ring-2 ring-primary",
+              active === m && ACTIVE_RING[states[m]],
             )}
           >
             <span className="text-[11px] text-muted-foreground">
-              {metricLabel(m)}
+              <Formula>{metricLabel(m)}</Formula>
             </span>
             <span className="text-2xl font-bold">
               {metricValue(m, crew)}{" "}

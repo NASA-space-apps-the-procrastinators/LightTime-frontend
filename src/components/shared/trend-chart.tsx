@@ -2,6 +2,29 @@ import type { Band, State } from "@/lib/schemas";
 
 const DAYS = ["-6 d", "-5 d", "-4 d", "-3 d", "-2 d", "-1 d", "Today"];
 
+const r2 = (v: number) => Number(v.toFixed(2));
+
+/** One smooth path through the points (monotone cubic: never bulges past a reading). */
+export function smoothPath(p: [number, number][]): string {
+  const n = p.length;
+  if (n === 0) return "";
+  let d = `M${r2(p[0][0])},${r2(p[0][1])}`;
+  if (n === 1) return d;
+  const slope = p.slice(1).map((q, i) => (q[1] - p[i][1]) / (q[0] - p[i][0]));
+  // Harmonic mean of the neighbouring slopes, flat at peaks and troughs (Fritsch-Carlson).
+  const m = p.map((_, i) => {
+    if (i === 0) return slope[0];
+    if (i === n - 1) return slope[n - 2];
+    const [a, b] = [slope[i - 1], slope[i]];
+    return a * b <= 0 ? 0 : (2 * a * b) / (a + b);
+  });
+  for (let i = 0; i < n - 1; i++) {
+    const h = (p[i + 1][0] - p[i][0]) / 3;
+    d += ` C${r2(p[i][0] + h)},${r2(p[i][1] + m[i] * h)} ${r2(p[i + 1][0] - h)},${r2(p[i + 1][1] - m[i + 1] * h)} ${r2(p[i + 1][0])},${r2(p[i + 1][1])}`;
+  }
+  return d;
+}
+
 // x in % and y in px, so the chart stretches to any width without scaling its text.
 export function TrendChart({
   series,
@@ -63,19 +86,26 @@ export function TrendChart({
           strokeDasharray="4 3"
         />
       )}
-      {series.slice(1).map((v, i) => (
-        <line
-          // biome-ignore lint/suspicious/noArrayIndexKey: one segment per day, order is fixed
-          key={i}
-          x1={`${x(i)}%`}
-          y1={y(series[i])}
-          x2={`${x(i + 1)}%`}
-          y2={y(v)}
+      {/* x is in %, so the line is drawn in a 100-wide box stretched to fit; the stroke keeps its width. */}
+      <svg
+        aria-hidden="true"
+        width="100%"
+        height={H}
+        viewBox={`0 0 100 ${H}`}
+        preserveAspectRatio="none"
+        className="overflow-visible"
+      >
+        <path
+          data-line
+          d={smoothPath(series.map((v, i) => [x(i), y(v)]))}
+          fill="none"
           stroke="var(--color-foreground)"
           strokeWidth={compact ? 1.5 : 2}
           strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
         />
-      ))}
+      </svg>
       {series.map((v, i) => (
         <circle
           // biome-ignore lint/suspicious/noArrayIndexKey: one point per day, order is fixed
@@ -83,7 +113,7 @@ export function TrendChart({
           data-out={isOut(v)}
           cx={`${x(i)}%`}
           cy={y(v)}
-          r={compact ? 2.5 : 4.5}
+          r={compact ? 2 : 4}
           fill={
             band === null
               ? "var(--color-muted-foreground)" // no band, so no in/out to colour
@@ -93,8 +123,6 @@ export function TrendChart({
                   : "var(--color-alert)"
                 : "var(--color-ok)"
           }
-          stroke="var(--color-card)"
-          strokeWidth={compact ? 1 : 2}
         />
       ))}
     </svg>

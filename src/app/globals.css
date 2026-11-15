@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-heading: var(--font-space-grotesk), var(--font-inter), sans-serif;
+  --font-heading: var(--font-space-grotesk), var(--font-manrope), sans-serif;
   /* State colours: reserved for OK / WATCH / ALERT only. */
   --color-ok: #15803d;
   --color-ok-bg: #dcfce7;
@@ -57,6 +57,34 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* damped spring (ζ≈0.55, ~12% overshoot) sampled into linear() */
+  --ease-spring: linear(
+    0,
+    0.061,
+    0.207,
+    0.394,
+    0.587,
+    0.761,
+    0.904,
+    1.009,
+    1.078,
+    1.115,
+    1.126,
+    1.119,
+    1.101,
+    1.078,
+    1.054,
+    1.031,
+    1.013,
+    0.999,
+    0.991,
+    0.986,
+    0.984,
+    0.985,
+    0.987,
+    0.99,
+    1
+  );
 }
 
 /* Light theme from "Light Time/data/design-tokens.json". */
@@ -84,8 +112,8 @@
   --chart-3: #b45309;
   --chart-4: #dc2626;
   --chart-5: #5b6b82;
-  /* 10px = tile radius (rounded-lg); card 14px = rounded-xl. */
-  --radius: 0.625rem;
+  /* Square corners on every card, tile, button and input; pills and avatars use rounded-full. */
+  --radius: 0px;
   --sidebar: #ffffff;
   --sidebar-foreground: #111827;
   --sidebar-primary: #2563eb;
@@ -121,7 +149,29 @@
 .alert-pulse {
   animation: alert-pulse 1200ms ease-in-out infinite;
 }
+/* Panels folding into bars and back: one spring for the box, a quick crossfade inside it.
+   The snapshots are clipped, not scaled, so a narrow bar never balloons tall while it widens. */
+::view-transition-group(.fold) {
+  animation-duration: 600ms;
+  animation-timing-function: var(--ease-spring);
+}
+::view-transition-image-pair(.fold) {
+  overflow: clip;
+  border-radius: 0.75rem;
+}
+::view-transition-old(.fold),
+::view-transition-new(.fold) {
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+  animation-duration: 220ms;
+}
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
   .alert-pulse {
     animation: none;
     box-shadow: 0 0 0 3px rgb(220 38 38 / 0.35);

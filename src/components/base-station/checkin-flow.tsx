@@ -8,7 +8,6 @@ import { CheckinMood } from "@/components/base-station/checkin-mood";
 import { CheckinSchedule } from "@/components/base-station/checkin-schedule";
 import { CheckinStepper } from "@/components/base-station/checkin-stepper";
 import { ReactionTest } from "@/components/base-station/reaction-test";
-import { Button } from "@/components/ui/button";
 import { MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
 import type { Checkin } from "@/lib/schemas";
@@ -18,7 +17,16 @@ export function CheckinFlow({ crewId }: { crewId: string }) {
   const crew = all.find((c) => c.id === crewId);
   // Already logged today: open on the summary instead of starting over.
   const [step, setStep] = useState(() => (state.checkins[crewId] ? 5 : 1));
-  const [checkin, setCheckin] = useState<Checkin | null>(null);
+  // Seeded from today's record, so going back to Mood or Reaction has the answers.
+  const [captured, setCaptured] = useState(() =>
+    Boolean(state.checkins[crewId]),
+  );
+  const [checkin, setCheckin] = useState<Checkin | null>(() => {
+    const r = state.checkins[crewId];
+    return r
+      ? { mood: r.mood, sleep_h: r.sleep_h, symptoms: r.symptoms, note: r.note }
+      : null;
+  });
   if (!crew) return null;
 
   return (
@@ -28,20 +36,26 @@ export function CheckinFlow({ crewId }: { crewId: string }) {
           {crew.name} · Morning check-in · day{" "}
           {ship?.mission_day ?? MISSION.mission_day}
         </h1>
-        <CheckinStepper step={step} />
-        <span className="ml-auto text-xs text-muted-foreground">
-          Streak {state.streak} days · next badge at 14
-        </span>
+        <CheckinStepper step={step} onSelect={setStep} />
       </section>
       <div className="grid gap-6 px-4 py-6 md:px-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0 rounded-xl border border-border bg-card p-5">
           {step === 1 && <CheckinCuff onDone={() => setStep(2)} />}
           {step === 2 && (
-            <CheckinCapture crew={crew} onDone={() => setStep(3)} />
+            <CheckinCapture
+              crew={crew}
+              startDone={captured}
+              onDone={() => {
+                setCaptured(true);
+                setStep(3);
+              }}
+            />
           )}
           {step === 3 && (
             <CheckinMood
               crew={crew}
+              initial={checkin}
+              onBack={() => setStep(2)}
               onDone={(c) => {
                 setCheckin(c);
                 setStep(4);
@@ -63,18 +77,7 @@ export function CheckinFlow({ crewId }: { crewId: string }) {
               }}
             />
           )}
-          {step === 5 && (
-            <>
-              <CheckinDone crew={crew} />
-              <Button
-                variant="ghost"
-                className="mt-2 min-h-11"
-                onClick={() => setStep(1)}
-              >
-                Redo check-in
-              </Button>
-            </>
-          )}
+          {step === 5 && <CheckinDone crew={crew} onRedo={() => setStep(1)} />}
         </section>
         <CheckinSchedule />
       </div>

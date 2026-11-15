@@ -14,6 +14,8 @@ export function useAlarm(active: boolean, soundOn: boolean): void {
     if (!active || !soundOn) return;
 
     const beep = () => {
+      // A background tab stays quiet; the system notification covers it.
+      if (document.hidden) return;
       try {
         const Ctor = globalThis.AudioContext;
         if (!Ctor) return;

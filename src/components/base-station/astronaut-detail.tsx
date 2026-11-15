@@ -7,6 +7,7 @@ import { useState } from "react";
 import { BodyMap } from "@/components/base-station/body-map";
 import { MetricTiles } from "@/components/base-station/metric-tiles";
 import { RegionCards } from "@/components/base-station/region-cards";
+import { Formula } from "@/components/shared/formula";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { StatePill } from "@/components/shared/state-pill";
 import { TrendChart } from "@/components/shared/trend-chart";
@@ -52,7 +53,7 @@ export function AstronautDetail({ crewId }: { crewId: string }) {
       <section className="flex flex-wrap items-center gap-4 border-b border-border-soft px-4 py-4 md:px-8">
         <Link
           href="/base-station"
-          className="inline-flex items-center gap-1 text-[13px] text-link"
+          className="inline-flex min-h-11 items-center gap-1 text-[13px] text-link"
         >
           <ArrowLeft aria-hidden className="size-4" /> Crew
         </Link>
@@ -100,9 +101,9 @@ export function AstronautDetail({ crewId }: { crewId: string }) {
             <StatePill state="ALERT" />
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            HEAD vision, sleep, mood · HRT heart, BP · LNG breathing, SpO2 · GUT
-            nutrition, glucose · SPN bone · LEG muscle, fluid · SKN temperature,
-            dose. Ring colour is the region's state.
+            HEAD vision, sleep, mood · HRT heart, BP · LNG breathing, SpO
+            <sub>2</sub> · GUT nutrition, glucose · SPN bone · LEG muscle, fluid
+            · SKN temperature, dose. Ring colour is the region's state.
           </p>
         </section>
 
@@ -114,7 +115,7 @@ export function AstronautDetail({ crewId }: { crewId: string }) {
             <h2 className="text-[17px] font-semibold">{r.title}</h2>
             <StatePill state={regionState(region, crew)} />
             <span className="text-xs text-muted-foreground">
-              Hazard: {r.hazard}
+              Hazard: <Formula>{r.hazard}</Formula>
             </span>
           </div>
           <MetricTiles
@@ -127,7 +128,7 @@ export function AstronautDetail({ crewId }: { crewId: string }) {
             <div className="rounded-xl border border-border bg-card px-4 py-3.5">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <h3 className="text-sm font-semibold">
-                  {metricLabel(chartMetric)}, last 7 days
+                  <Formula>{`${metricLabel(chartMetric)}, last 7 days`}</Formula>
                 </h3>
                 <span className="text-xs text-muted-foreground">
                   green band = {crew.name}'s own baseline
