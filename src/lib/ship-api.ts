@@ -140,6 +140,9 @@ export type ShipState = z.infer<typeof shipStateSchema>;
 export function span(seconds: number): string {
   if (seconds < 60) return `${Number(seconds.toFixed(2))} s`;
   const whole = Math.round(seconds);
+  // Data ages (not light times) can run to days: "31 h 3 min", not "1863 min 54 s".
+  if (whole >= 3600)
+    return `${Math.floor(whole / 3600)} h ${Math.floor((whole % 3600) / 60)} min`;
   return `${Math.floor(whole / 60)} min ${whole % 60} s`;
 }
 
@@ -378,6 +381,11 @@ export const ship = {
     one(shipStationSchema, await request("/api/base/station")),
   weather: async () =>
     one(shipWeatherSchema, await request("/api/base/space-weather")),
+  /** The suits' vitals feed to Earth: a demo control, so the crew console may ask Earth's route. */
+  feed: async () =>
+    z
+      .object({ running: z.boolean(), interval_s: z.number() })
+      .parse(await request("/api/earth/feed")),
   post: (path: string, body?: unknown) =>
     request(path, { method: "POST", body: JSON.stringify(body ?? {}) }),
 };

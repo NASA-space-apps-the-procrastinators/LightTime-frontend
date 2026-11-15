@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Rocket, Send } from "lucide-react";
+import { Check, ChevronDown, Circle, Rocket, Send } from "lucide-react";
 import { Doto } from "next/font/google";
 import Link from "next/link";
 import {
@@ -21,29 +21,74 @@ const doto = Doto({ subsets: ["latin"], weight: "800" });
 const AGENCY = "Canadian Space Agency";
 const MARS_FARTHEST_S = 22.3 * 60;
 
+/** A message on the link. kind is "report", "update", "reply", "summary" or "vitals". */
 type Message = {
   id: number;
   kind: string;
   status: "queued" | "in_flight" | "delivered";
-  eta_s: number | null;
+  eta_s: number | null; // null while queued (no link)
   sent_at: string | null;
   deliver_at: string | null;
   payload: Record<string, unknown>;
 };
-type Inbox = {
+/** GET /api/earth/state: the link as Earth sees it. last_contact_* are null until something arrives. */
+type EarthState = {
   link_up: boolean;
   delay_s: number;
   mode: string;
   who_decides: string;
-  messages: Message[];
+  last_contact_at: string | null;
+  last_contact_age_s: number | null;
 };
 type Network = {
   horizons_one_way_s: number;
-  dsn_one_way_s: number | null;
+  dsn_one_way_s: number | null; // null with passes: [] when DSN is offline
   differ_s: number | null;
   source: string;
 };
-type Case = { report: Message; updates: Message[] };
+type CaseState = "OK" | "WATCH" | "ALERT" | "SOS";
+type CaseStatus = "reported" | "acknowledged" | "in_progress" | "resolved";
+type ReplyStatus = "queued" | "in_flight" | "delivered";
+/** GET /api/earth/cases: one per alert whose report has reached Earth. Ids are strings ("A1"). */
+type EarthCase = {
+  alert_id: string;
+  crew: string | null;
+  state: CaseState;
+  reason: string | null;
+  simulated: boolean;
+  raised_at: string;
+  status: CaseStatus;
+  acknowledged_by: string | null;
+  resolved_by: string | null;
+  steps_done: number[];
+  timeline: { arrived_at: string | null };
+  awaiting_reply: boolean;
+  reply_status: ReplyStatus | null;
+  data_age: { report_age_s: number; newest_reading_age_s: number | null };
+};
+/** GET /api/earth/cases/<id>: the case plus its handoff (SBAR) and checklist. */
+type CaseDetail = EarthCase & {
+  report: { sbar: Record<string, string> | null; steps: string[] };
+};
+/** GET /api/earth/cases/<id>/thread */
+type ThreadEntry = {
+  id: string;
+  author: string;
+  text: string;
+  arrived_at: string | null;
+  status: ReplyStatus;
+};
+/** GET /api/earth/vitals: the newest suit reading per crew member that has reached Earth. */
+type Vital = {
+  crew_id: string;
+  crew: string;
+  heart_rate: number | null;
+  spo2: number | null;
+  skin_temp: number | null;
+  signal_ok: boolean;
+  age_s: number;
+};
+type Vitals = { latest: Record<string, Vital> };
 
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, { cache: "no-store" });
@@ -51,19 +96,43 @@ async function get<T>(path: string): Promise<T> {
   return response.json();
 }
 
-/** One case per alert that has reached Earth: its report, then every later message about it. */
-function groupCases(messages: Message[]): Case[] {
-  const oldestFirst = [...messages].reverse();
-  const cases: Case[] = [];
-  for (const m of oldestFirst) {
-    const alertId = m.payload.alert_id;
-    if (alertId == null) continue;
-    const found = cases.find((c) => c.report.payload.alert_id === alertId);
-    if (found) found.updates.push(m);
-    else if (m.kind === "report") cases.push({ report: m, updates: [] });
-  }
-  return cases.reverse();
-}
+// The case's own words: these are not the ship's alert stages.
+const STATUS: Record<CaseStatus, string> = {
+  reported: "Reported",
+  acknowledged: "Acknowledged",
+  in_progress: "In progress",
+  resolved: "Resolved",
+};
+const REPLY: Record<ReplyStatus, string> = {
+  queued: "Your reply is queued: no link",
+  in_flight: "Your reply is on its way",
+  delivered: "Your reply reached the ship",
+};
+const statusLine = (c: EarthCase) =>
+  c.status === "resolved" && c.resolved_by
+    ? `Resolved by ${c.resolved_by}`
+    : c.status === "acknowledged" && c.acknowledged_by
+      ? `Acknowledged by ${c.acknowledged_by}`
+      : STATUS[c.status];
+const replyLine = (c: EarthCase) =>
+  c.reply_status
+    ? REPLY[c.reply_status]
+    : c.awaiting_reply
+      ? "Awaiting your reply"
+      : "";
+const ageLine = (c: EarthCase) =>
+  c.data_age.newest_reading_age_s !== null
+    ? `Newest reading ${span(c.data_age.newest_reading_age_s)} old`
+    : `Report ${span(c.data_age.report_age_s)} old`;
+const STATE_PILL: Record<CaseState, string> = {
+  SOS: "bg-rose-500/25 text-rose-100",
+  ALERT: "bg-rose-500/20 text-rose-200",
+  WATCH: "bg-amber-400/15 text-amber-200",
+  OK: "bg-emerald-400/15 text-emerald-200",
+};
+/** null-safe number for the vitals: "–" when the suit sent nothing. */
+const num = (v: number | null, digits = 0) =>
+  v === null ? "–" : v.toFixed(digits);
 
 const text = (value: unknown) => (typeof value === "string" ? value : "");
 
@@ -109,24 +178,32 @@ const glass =
   "rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-md";
 
 export function EarthConsole() {
-  const [inbox, setInbox] = useState<Inbox | null>(null);
+  const [link, setLink] = useState<EarthState | null>(null);
+  const [cases, setCases] = useState<EarthCase[]>([]);
   const [sent, setSent] = useState<Message[]>([]);
+  const [vitals, setVitals] = useState<Vitals | null>(null);
   const [network, setNetwork] = useState<Network | null>(null);
-  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  // Which cases are open: their details load only then.
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   const [down, setDown] = useState(false);
   const utc = useUtcClock();
 
   const refresh = useCallback(() => {
     Promise.all([
-      get<Inbox>("/api/earth/inbox"),
+      get<EarthState>("/api/earth/state"),
+      get<{ cases: EarthCase[] }>("/api/earth/cases"),
       get<Message[]>("/api/earth/outbox"),
     ])
-      .then(([i, o]) => {
-        setInbox(i);
+      .then(([s, c, o]) => {
+        setLink(s);
+        setCases(c.cases);
         setSent(o);
         setDown(false);
       })
       .catch(() => setDown(true));
+    // The vitals are extra: their failure must not take the console down.
+    get<Vitals>("/api/earth/vitals?limit=1").then(setVitals, () => {});
   }, []);
 
   useEffect(() => {
@@ -169,7 +246,7 @@ export function EarthConsole() {
         </div>
       </Shell>
     );
-  if (!inbox)
+  if (!link)
     return (
       <Shell>
         <p className="mt-16 text-center text-sm text-slate-400">
@@ -178,103 +255,58 @@ export function EarthConsole() {
       </Shell>
     );
 
-  const cases = groupCases(inbox.messages);
-  const fresh = cases.filter((c) => !c.report.payload.simulated);
-  const earlier = cases.filter((c) => c.report.payload.simulated);
-  const waiting = sent.filter((m) => m.status !== "delivered");
+  const fresh = cases.filter((c) => !c.simulated);
+  const earlier = cases.filter((c) => c.simulated);
+  // Earth's outbox holds only its replies; a "vitals" message never belongs in this list.
+  const waiting = sent.filter(
+    (m) => m.kind === "reply" && m.status !== "delivered",
+  );
   const flying = waiting.find(
     (m) => m.status === "in_flight" && m.eta_s !== null,
   );
   // What the big countdown shows: a reply on its way, or how old the light from the ship is.
-  const shown = flying?.eta_s ?? inbox.delay_s;
+  const shown = flying?.eta_s ?? link.delay_s;
 
-  function reply(report: Message) {
-    const body = (drafts[report.id] ?? "").trim();
+  function reply(c: EarthCase) {
+    const body = (drafts[c.alert_id] ?? "").trim();
     if (!body) return;
     fetch(`${API_URL}/api/earth/reply`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message_id: report.id,
+        alert_id: c.alert_id,
         text: body,
         from: "Flight surgeon",
       }),
     }).then(() => {
-      setDrafts((d) => ({ ...d, [report.id]: "" }));
+      setDrafts((d) => ({ ...d, [c.alert_id]: "" }));
       refresh();
     });
   }
 
-  /** The handoff (SBAR), the week, the reasons and later updates of a case. */
-  const extras = ({ report, updates }: Case) => {
-    const p = report.payload;
-    const sbar = (p.sbar ?? {}) as Record<string, string>;
-    const why = Array.isArray(p.why) ? (p.why as string[]) : [];
-    const week = (
-      p.bundle as
-        | { days?: Record<string, { date: string; value: number | null }[]> }
-        | undefined
-    )?.days;
-    return (
-      <>
-        {p.sbar != null && (
-          <dl className="grid gap-3 @lg:grid-cols-2">
-            {(
-              ["situation", "background", "assessment", "request"] as const
-            ).map((part) => (
-              <div key={part}>
-                <dt className="text-[11px] uppercase tracking-wider text-slate-400">
-                  {part}
-                </dt>
-                <dd className="text-slate-100">{sbar[part]}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {week?.hr_rest && (
-          <p className="text-slate-200">
-            Resting heart rate, last 7 days:{" "}
-            {week.hr_rest.map((d) => d.value ?? "no value").join(", ")} bpm
-          </p>
-        )}
-        {why.length > 0 && (
-          <ul className="list-disc pl-4 text-xs text-slate-300">
-            {why.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        )}
-        {updates.length > 0 && (
-          <ul className="flex flex-col gap-1 border-t border-white/10 pt-2 text-slate-200">
-            {updates.map((u) => (
-              <li key={u.id}>
-                {u.deliver_at ? clock(u.deliver_at) : ""} ·{" "}
-                {text(u.payload.text) || text(u.payload.event) || u.kind}
-              </li>
-            ))}
-          </ul>
-        )}
-      </>
-    );
-  };
+  const toggle =
+    (id: string) => (e: React.SyntheticEvent<HTMLDetailsElement>) => {
+      const isOpen = e.currentTarget.open;
+      setOpen((o) => ({ ...o, [id]: isOpen }));
+    };
 
   /** Reply to the ship about a case. Stacked: input above a full-width button (narrow places). */
-  const replyForm = (report: Message, stacked: boolean) => (
+  const replyForm = (c: EarthCase, stacked: boolean) => (
     <form
       className={cn("flex flex-col gap-2", !stacked && "sm:flex-row")}
       onSubmit={(e) => {
         e.preventDefault();
-        reply(report);
+        reply(c);
       }}
     >
-      <label htmlFor={`reply-${report.id}`} className="sr-only">
+      <label htmlFor={`reply-${c.alert_id}`} className="sr-only">
         Reply to the ship
       </label>
       <input
-        id={`reply-${report.id}`}
-        value={drafts[report.id] ?? ""}
+        id={`reply-${c.alert_id}`}
+        value={drafts[c.alert_id] ?? ""}
         onChange={(e) =>
-          setDrafts((d) => ({ ...d, [report.id]: e.target.value }))
+          setDrafts((d) => ({ ...d, [c.alert_id]: e.target.value }))
         }
         placeholder="Reply to the ship"
         maxLength={500}
@@ -288,28 +320,43 @@ export function EarthConsole() {
         className="inline-flex h-11 items-center justify-center gap-2 bg-lime-300 px-5 text-sm font-bold text-slate-950 hover:bg-lime-200 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lime-300/50"
       >
         <Send aria-hidden className="size-4" />
-        Send, arrives in {inbox.link_up ? span(inbox.delay_s) : "no link"}
+        Send, arrives in {link.link_up ? span(link.delay_s) : "no link"}
       </button>
     </form>
   );
 
+  /** Status, reply progress and data age, in the case's own words. */
+  const progress = (c: EarthCase) => (
+    <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <span className="text-slate-100">{statusLine(c)}</span>
+      {replyLine(c) && (
+        <span className={c.awaiting_reply ? "text-amber-200" : "text-lime-300"}>
+          {replyLine(c)}
+        </span>
+      )}
+      <span className="text-slate-400">{ageLine(c)}</span>
+    </p>
+  );
+
   /** An earlier case as one row of the full-width log; open it for the details and a reply. */
-  const row = (c: Case) => {
-    const p = c.report.payload;
-    const raised = clock(text(p.raised_at));
-    const reached = c.report.deliver_at ? clock(c.report.deliver_at) : "";
+  const row = (c: EarthCase) => {
+    const reached = c.timeline.arrived_at ? clock(c.timeline.arrived_at) : "–";
     return (
-      <details key={c.report.id} className="group border-t border-white/10">
+      <details
+        key={c.alert_id}
+        className="group border-t border-white/10"
+        onToggle={toggle(c.alert_id)}
+      >
         <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 py-3.5 hover:bg-white/[0.03] md:grid-cols-[4.5rem_11rem_minmax(0,1fr)_6.5rem_1rem] md:items-center [&::-webkit-details-marker]:hidden">
           <span className="text-xs text-slate-400 tabular-nums md:text-sm md:text-slate-300">
-            {raised}
-            <span className="md:hidden"> · {text(p.crew) || text(p.from)}</span>
+            {clock(c.raised_at)}
+            <span className="md:hidden"> · {c.crew ?? "Crew"}</span>
           </span>
           <span className="hidden truncate text-sm text-slate-300 md:block">
-            {text(p.crew) || text(p.from)}
+            {c.crew ?? "Crew"}
           </span>
           <span className="col-span-2 line-clamp-2 text-sm font-semibold leading-snug text-slate-100 group-open:line-clamp-none md:col-span-1">
-            {text(p.reason) || text(p.text)}
+            {c.reason ?? "Alert"}
           </span>
           <span className="hidden text-sm text-slate-400 tabular-nums md:block">
             {reached}
@@ -321,85 +368,58 @@ export function EarthConsole() {
         </summary>
         <div className="@container grid gap-6 pb-5 text-sm md:grid-cols-[minmax(0,1fr)_20rem] md:pl-[4.5rem]">
           <div className="flex flex-col gap-3">
-            <p className="text-[11px] text-slate-400">
-              raised {raised} · reached Earth {reached} UTC
-            </p>
-            {extras(c)}
+            {progress(c)}
+            {open[c.alert_id] && <CaseDetails alertId={c.alert_id} />}
           </div>
-          {replyForm(c.report, true)}
+          {replyForm(c, true)}
         </div>
       </details>
     );
   };
 
-  // An arrow, not a function declaration: only an arrow keeps `inbox` narrowed to non-null.
-  const card = ({ report, updates }: Case) => {
-    const p = report.payload;
-    const sbar = p.sbar;
-    const look = p.lookahead as {
-      eta_s: number;
-      reply_s: number | null;
-      earth_in_time: boolean;
-    } | null;
-    const why = Array.isArray(p.why) ? (p.why as string[]) : [];
-    const week = (p.bundle as { days?: { hr_rest?: unknown } } | undefined)
-      ?.days;
-    return (
-      <article
-        key={report.id}
-        className="flex flex-col gap-4 rounded-2xl border border-rose-400/30 bg-linear-to-br from-rose-950/90 via-rose-900/55 to-fuchsia-950/60 p-5"
-      >
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {text(p.level) && (
-            <span className="rounded-full bg-rose-500/20 px-2.5 py-1 font-bold uppercase tracking-wider text-rose-200">
-              {text(p.level)}
-            </span>
+  // An arrow, not a function declaration: only an arrow keeps `link` narrowed to non-null.
+  const card = (c: EarthCase) => (
+    <article
+      key={c.alert_id}
+      className={cn(
+        "flex flex-col gap-4 border p-5",
+        c.status === "resolved" || c.state === "OK"
+          ? "border-white/10 bg-white/[0.04]"
+          : c.state === "WATCH"
+            ? "border-amber-300/30 bg-linear-to-br from-amber-950/70 via-amber-900/35 to-slate-950/60"
+            : "border-rose-400/30 bg-linear-to-br from-rose-950/90 via-rose-900/55 to-fuchsia-950/60",
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 font-bold tracking-wider",
+            STATE_PILL[c.state],
           )}
-          <span className="text-slate-300">{text(p.crew) || text(p.from)}</span>
-          <span className="ml-auto text-slate-400">
-            raised {clock(text(p.raised_at))} · reached Earth{" "}
-            {report.deliver_at ? clock(report.deliver_at) : ""} UTC
-          </span>
+        >
+          {c.state}
+        </span>
+        <span className="text-slate-300">{c.crew ?? "Crew"}</span>
+        <span className="ml-auto text-slate-400">
+          raised {clock(c.raised_at)} · reached Earth{" "}
+          {c.timeline.arrived_at ? clock(c.timeline.arrived_at) : "–"} UTC
+        </span>
+      </div>
+      <h2 className="font-heading text-xl font-semibold leading-snug sm:text-2xl">
+        {c.reason ?? "Alert"}
+      </h2>
+      {progress(c)}
+      <details className="group text-sm" onToggle={toggle(c.alert_id)}>
+        <summary className="cursor-pointer select-none text-slate-300 hover:text-white">
+          Handoff, checklist and messages
+        </summary>
+        <div className="@container mt-3">
+          {open[c.alert_id] && <CaseDetails alertId={c.alert_id} />}
         </div>
-        <h2 className="font-heading text-xl font-semibold leading-snug sm:text-2xl">
-          {text(p.reason) || text(p.text)}
-        </h2>
-        {look && (
-          <p className="text-sm text-slate-200">
-            When this left the ship: <strong>{span(look.eta_s)}</strong> to the
-            red line, earliest reply{" "}
-            <strong>
-              {look.reply_s === null ? "none, no link" : span(look.reply_s)}
-            </strong>
-            .{" "}
-            <span
-              className={look.earth_in_time ? "text-lime-300" : "text-rose-200"}
-            >
-              {look.earth_in_time
-                ? "Earth could answer in time."
-                : "Earth could not answer in time."}
-            </span>
-          </p>
-        )}
-
-        {(sbar != null ||
-          why.length > 0 ||
-          week?.hr_rest ||
-          updates.length > 0) && (
-          <details className="group text-sm">
-            <summary className="cursor-pointer select-none text-slate-300 hover:text-white">
-              Handoff, reasons and updates
-            </summary>
-            <div className="@container mt-3 flex flex-col gap-3">
-              {extras({ report, updates })}
-            </div>
-          </details>
-        )}
-
-        {replyForm(report, false)}
-      </article>
-    );
-  };
+      </details>
+      {replyForm(c, false)}
+    </article>
+  );
 
   return (
     <Shell>
@@ -410,8 +430,8 @@ export function EarthConsole() {
         className="relative isolate -mt-5 mx-[calc(50%-50vw)] h-[40rem] w-screen overflow-hidden sm:h-[42rem]"
       >
         <MapLayer
-          delay={inbox.delay_s}
-          linkUp={inbox.link_up}
+          delay={link.delay_s}
+          linkUp={link.link_up}
           replies={waiting}
         />
         <div className="pointer-events-none relative z-10 mx-auto flex max-w-7xl flex-col items-start gap-3 px-4 pt-5 md:px-8">
@@ -431,12 +451,12 @@ export function EarthConsole() {
               <span
                 className={cn(
                   "px-3 py-1.5 text-xs font-bold",
-                  inbox.link_up
+                  link.link_up
                     ? "bg-lime-300 text-slate-950"
                     : "bg-rose-500/25 text-rose-200",
                 )}
               >
-                {inbox.link_up ? "Link up" : "No link"}
+                {link.link_up ? "Link up" : "No link"}
               </span>
               <span className={cn(glass, "px-4 py-2 text-sm tabular-nums")}>
                 UTC <strong className="ml-1 font-semibold">{utc}</strong>
@@ -455,7 +475,7 @@ export function EarthConsole() {
             </div>
           </header>
           <p className="mt-6 text-sm text-slate-300 sm:mt-10">
-            {!inbox.link_up
+            {!link.link_up
               ? "No link to the ship"
               : flying
                 ? "Reply reaches the ship in"
@@ -465,68 +485,75 @@ export function EarthConsole() {
             className={cn(
               doto.className,
               "text-7xl leading-none tracking-tight sm:text-8xl",
-              !inbox.link_up && "text-rose-300",
+              !link.link_up && "text-rose-300",
             )}
           >
-            {!inbox.link_up
+            {!link.link_up
               ? "--:--"
               : shown < 60
                 ? // Under a minute: the number in dots, its unit in small type like "old".
                   Number(shown.toFixed(2))
                 : face(shown)}
-            {inbox.link_up && (shown < 60 || !flying) && (
+            {link.link_up && (shown < 60 || !flying) && (
               <span className="ml-3 align-middle font-sans text-base font-normal tracking-normal text-slate-400">
                 {shown < 60 ? (flying ? "seconds" : "seconds old") : "old"}
               </span>
             )}
           </p>
           <span className={cn(glass, "px-3 py-1.5 text-xs text-slate-200")}>
-            {inbox.link_up
-              ? `One way ${span(inbox.delay_s)} · ${inbox.who_decides}`
+            {link.link_up
+              ? `One way ${span(link.delay_s)} · ${link.who_decides}`
               : "Replies are queued and leave when the link returns"}
+            {link.last_contact_age_s !== null
+              ? ` · last heard ${span(link.last_contact_age_s)} ago`
+              : " · nothing heard yet"}
           </span>
         </div>
       </section>
 
-      <div className="relative grid gap-6 lg:-mt-44 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="flex min-w-0 flex-col gap-6">
-          {waiting.length > 0 && (
-            <section
-              aria-label="Replies on their way"
-              className={cn(glass, "p-5 text-sm")}
-            >
-              <h2 className="mb-2 font-heading text-base font-semibold">
-                Replies on their way
-              </h2>
-              <ul className="flex flex-col gap-1.5 text-slate-200">
-                {waiting.map((m) => (
-                  <li key={m.id}>
-                    <span className="text-slate-400">
-                      {m.status === "queued"
-                        ? "Queued, no link"
-                        : `Arrives on the ship in ${span(m.eta_s ?? 0)}`}
-                      :
-                    </span>{" "}
-                    {text(m.payload.text)}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+      <div className="relative flex flex-col gap-6 lg:-mt-44">
+        <CrewVitals vitals={vitals} />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="flex min-w-0 flex-col gap-6">
+            {waiting.length > 0 && (
+              <section
+                aria-label="Replies on their way"
+                className={cn(glass, "p-5 text-sm")}
+              >
+                <h2 className="mb-2 font-heading text-base font-semibold">
+                  Replies on their way
+                </h2>
+                <ul className="flex flex-col gap-1.5 text-slate-200">
+                  {waiting.map((m) => (
+                    <li key={m.id}>
+                      <span className="text-slate-400">
+                        {m.status === "queued"
+                          ? "Queued, no link"
+                          : `Arrives on the ship in ${span(m.eta_s ?? 0)}`}
+                        :
+                      </span>{" "}
+                      {text(m.payload.text)}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
-          {fresh.length === 0 ? (
-            <p className={cn(glass, "p-5 text-sm text-slate-400")}>
-              Nothing new has reached Earth yet. Everything here left the ship
-              at least {span(inbox.delay_s)} ago.
-            </p>
-          ) : (
-            fresh.map((c) => card(c))
-          )}
+            {fresh.length === 0 ? (
+              <p className={cn(glass, "p-5 text-sm text-slate-400")}>
+                {link.link_up
+                  ? `Waiting for the signal: nothing new has reached Earth. A report takes ${span(link.delay_s)} to arrive.`
+                  : "Waiting for the signal: the ship is behind the Sun, so nothing reaches Earth until the link returns."}
+              </p>
+            ) : (
+              fresh.map((c) => card(c))
+            )}
+          </div>
+
+          <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
+            <MarsLink link={link} network={network} />
+          </aside>
         </div>
-
-        <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
-          <MarsLink inbox={inbox} network={network} />
-        </aside>
       </div>
 
       {earlier.length > 0 && (
@@ -556,6 +583,190 @@ export function EarthConsole() {
         </section>
       )}
     </Shell>
+  );
+}
+
+/**
+ * A case's handoff, checklist and thread, loaded only while the case is open and refreshed
+ * every 2 s. A 404 is not an error: the report has not reached Earth yet (or the link is down).
+ */
+function CaseDetails({ alertId }: { alertId: string }) {
+  const [detail, setDetail] = useState<CaseDetail | null>(null);
+  const [thread, setThread] = useState<ThreadEntry[]>([]);
+  const [waiting, setWaiting] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    const load = () =>
+      Promise.all([
+        get<CaseDetail>(`/api/earth/cases/${alertId}`),
+        get<{ messages: ThreadEntry[] }>(`/api/earth/cases/${alertId}/thread`),
+      ]).then(
+        ([d, t]) => {
+          if (!live) return;
+          setDetail(d);
+          setThread(t.messages);
+          setWaiting(false);
+        },
+        () => live && setWaiting(true),
+      );
+    load();
+    const id = setInterval(load, 2000);
+    return () => {
+      live = false;
+      clearInterval(id);
+    };
+  }, [alertId]);
+
+  if (!detail)
+    return (
+      <p className="text-slate-400">
+        {waiting
+          ? "Waiting for the signal: this case has not reached Earth yet."
+          : "Loading…"}
+      </p>
+    );
+  const { sbar, steps } = detail.report;
+  return (
+    <div className="flex flex-col gap-3">
+      {sbar && (
+        <dl className="grid gap-3 @lg:grid-cols-2">
+          {(["situation", "background", "assessment", "request"] as const).map(
+            (part) =>
+              sbar[part] && (
+                <div key={part}>
+                  <dt className="text-[11px] uppercase tracking-wider text-slate-400">
+                    {part}
+                  </dt>
+                  <dd className="text-slate-100">{sbar[part]}</dd>
+                </div>
+              ),
+          )}
+        </dl>
+      )}
+      {steps.length > 0 && (
+        <ol
+          aria-label="Checklist"
+          className="flex flex-col gap-1 text-slate-200"
+        >
+          {steps.map((step, i) => (
+            <li key={step} className="flex items-start gap-2">
+              {detail.steps_done.includes(i) ? (
+                <Check
+                  aria-label="done"
+                  className="mt-0.5 size-4 shrink-0 text-lime-300"
+                />
+              ) : (
+                <Circle
+                  aria-label="not done"
+                  className="mt-0.5 size-4 shrink-0 text-slate-500"
+                />
+              )}
+              {step}
+            </li>
+          ))}
+        </ol>
+      )}
+      {thread.length > 0 && (
+        <ul
+          aria-label="Messages"
+          className="flex flex-col gap-1.5 border-t border-white/10 pt-2 text-slate-200"
+        >
+          {thread.map((m) => (
+            <li key={m.id}>
+              <span className="text-slate-400 tabular-nums">
+                {m.arrived_at
+                  ? clock(m.arrived_at)
+                  : m.status === "queued"
+                    ? "queued"
+                    : "on its way"}
+              </span>{" "}
+              · <strong className="font-semibold">{m.author}</strong>: {m.text}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** The newest suit reading per crew member that has reached Earth, each as old as the light. */
+function CrewVitals({ vitals }: { vitals: Vitals | null }) {
+  const latest = Object.values(vitals?.latest ?? {}).sort((a, b) =>
+    a.crew_id.localeCompare(b.crew_id),
+  );
+  return (
+    <section aria-labelledby="vitals-h" className={cn(glass, "p-5")}>
+      <div className="flex flex-wrap items-center gap-2 pb-3">
+        <h2 id="vitals-h" className="font-heading text-lg font-semibold">
+          Crew vitals
+        </h2>
+        <span className="border border-dashed border-slate-500 px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider text-slate-400">
+          SIMULATED
+        </span>
+        <span className="ml-auto text-xs text-slate-400">
+          the newest reading to reach Earth
+        </span>
+      </div>
+      {latest.length === 0 ? (
+        <p className="text-sm text-slate-400">
+          No suit readings have reached Earth yet. Start the suits from the crew
+          console: each reading lands here one light time after the ship has it.
+        </p>
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {latest.map((v) => (
+            <li
+              key={v.crew_id}
+              className="border border-white/10 bg-white/[0.03] p-3"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <strong className="truncate text-sm">{v.crew}</strong>
+                <span className="shrink-0 text-[11px] text-slate-400 tabular-nums">
+                  {span(v.age_s)} old
+                </span>
+              </div>
+              <dl className="mt-2 grid grid-cols-3 gap-2">
+                <div>
+                  <dt className="text-[11px] text-slate-400">Heart rate</dt>
+                  <dd className="font-heading text-lg font-semibold tabular-nums">
+                    {num(v.heart_rate)}
+                    <span className="ml-0.5 font-sans text-[11px] font-normal text-slate-400">
+                      bpm
+                    </span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] text-slate-400">
+                    SpO<sub>2</sub>
+                  </dt>
+                  <dd className="font-heading text-lg font-semibold tabular-nums">
+                    {num(v.spo2)}
+                    <span className="ml-0.5 font-sans text-[11px] font-normal text-slate-400">
+                      %
+                    </span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] text-slate-400">Skin</dt>
+                  <dd className="font-heading text-lg font-semibold tabular-nums">
+                    {num(v.skin_temp, 1)}
+                    <span className="ml-0.5 font-sans text-[11px] font-normal text-slate-400">
+                      °C
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+              {!v.signal_ok && (
+                <p className="mt-1.5 text-[11px] text-amber-200">
+                  No clean signal: check the sensor
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -849,14 +1060,14 @@ function MapLayer({
 
 /** The light time as the dial stands, against Mars at its farthest; and NASA's two figures for Mars today. */
 function MarsLink({
-  inbox,
+  link,
   network,
 }: {
-  inbox: Inbox;
+  link: EarthState;
   network: Network | null;
 }) {
   const ring = 2 * Math.PI * 70;
-  const share = Math.min(1, inbox.delay_s / MARS_FARTHEST_S);
+  const share = Math.min(1, link.delay_s / MARS_FARTHEST_S);
   return (
     <section
       aria-labelledby="mars-link-h"
@@ -872,12 +1083,12 @@ function MarsLink({
         <span
           className={cn(
             "px-3 py-1 text-xs font-bold",
-            inbox.link_up
+            link.link_up
               ? "bg-lime-300 text-slate-950"
               : "bg-rose-500/25 text-rose-200",
           )}
         >
-          {inbox.link_up ? "Link up" : "No link"}
+          {link.link_up ? "Link up" : "No link"}
         </span>
       </div>
 
@@ -909,7 +1120,7 @@ function MarsLink({
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="font-heading text-3xl font-semibold tabular-nums">
-            {inbox.link_up ? face(inbox.delay_s) : "--:--"}
+            {link.link_up ? face(link.delay_s) : "--:--"}
           </span>
           <span className="text-[11px] text-slate-400">one way</span>
         </div>
@@ -922,11 +1133,11 @@ function MarsLink({
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
         <div>
           <dt className="text-xs text-slate-400">Round trip</dt>
-          <dd className="font-semibold">{span(inbox.delay_s * 2)}</dd>
+          <dd className="font-semibold">{span(link.delay_s * 2)}</dd>
         </div>
         <div>
           <dt className="text-xs text-slate-400">Who decides</dt>
-          <dd className="font-semibold">{inbox.who_decides}</dd>
+          <dd className="font-semibold">{link.who_decides}</dd>
         </div>
         <div>
           <dt className="text-xs text-slate-400">Mars today · JPL Horizons</dt>

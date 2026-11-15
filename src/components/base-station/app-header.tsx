@@ -17,6 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useId, useRef } from "react";
 import { Dial } from "@/components/base-station/dial";
 import { NotifyButton } from "@/components/base-station/notify-button";
+import { SuitsButton } from "@/components/base-station/suits-button";
 import { ThemeToggle } from "@/components/base-station/theme-toggle";
 import { Logo } from "@/components/shared/logo";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
@@ -74,7 +75,7 @@ export function AppHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8">
+    <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8 dark:bg-background/90 dark:backdrop-blur-md">
       <Link href="/base-station" className="flex min-h-11 items-center">
         <Logo />
       </Link>
@@ -227,6 +228,7 @@ export function AppHeader() {
             )}
           </span>
           <Dial />
+          <SuitsButton />
           <Button
             variant="outline"
             size="sm"
