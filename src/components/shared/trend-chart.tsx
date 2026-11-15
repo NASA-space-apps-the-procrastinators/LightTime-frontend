@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import type { Band, State } from "@/lib/schemas";
+import { cn } from "@/lib/utils";
 
 const DAYS = ["-6 d", "-5 d", "-4 d", "-3 d", "-2 d", "-1 d", "Today"];
 
@@ -42,6 +46,8 @@ export function TrendChart({
   /** Colour for out-of-band days: the metric's own state. */
   outState?: Exclude<State, "OK">;
 }) {
+  // The day under the pointer (full charts only): a guide line, a ring and a tooltip.
+  const [hover, setHover] = useState<number | null>(null);
   const H = compact ? 40 : 180;
   const padY = compact ? 5 : 12;
 
@@ -106,6 +112,28 @@ export function TrendChart({
           vectorEffect="non-scaling-stroke"
         />
       </svg>
+      {hover !== null && (
+        <line
+          x1={`${x(hover)}%`}
+          x2={`${x(hover)}%`}
+          y1="0"
+          y2={H}
+          stroke="var(--color-muted-foreground)"
+          strokeOpacity={0.4}
+          strokeDasharray="3 3"
+        />
+      )}
+      {hover !== null && (
+        <circle
+          cx={`${x(hover)}%`}
+          cy={y(series[hover])}
+          r={8}
+          fill="none"
+          stroke="var(--color-foreground)"
+          strokeOpacity={0.35}
+          strokeWidth={2}
+        />
+      )}
       {series.map((v, i) => (
         <circle
           // biome-ignore lint/suspicious/noArrayIndexKey: one point per day, order is fixed
@@ -149,7 +177,55 @@ export function TrendChart({
         )}
       </div>
       <div className="min-w-0 flex-1">
-        {svg}
+        <div className="relative">
+          {svg}
+          {/* Pointer and touch: the nearest day's value. The svg's label already reads the whole week. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 touch-pan-y"
+            onPointerMove={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const pct = ((e.clientX - r.left) / r.width) * 100;
+              let best = 0;
+              for (let i = 1; i < series.length; i++)
+                if (Math.abs(x(i) - pct) < Math.abs(x(best) - pct)) best = i;
+              setHover(best);
+            }}
+            onPointerLeave={() => setHover(null)}
+          />
+          {hover !== null && (
+            <div
+              aria-hidden="true"
+              className={cn(
+                "pointer-events-none absolute z-10 w-max -translate-y-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs shadow-md",
+                x(hover) < 12
+                  ? "translate-x-0"
+                  : x(hover) > 88
+                    ? "-translate-x-full"
+                    : "-translate-x-1/2",
+              )}
+              style={{ left: `${x(hover)}%`, top: y(series[hover]) - 12 }}
+            >
+              <span className="text-muted-foreground">
+                {DAYS[DAYS.length - series.length + hover]}
+              </span>{" "}
+              ·{" "}
+              <strong className="tabular-nums">
+                {`${series[hover]} ${unit}`.trim()}
+              </strong>
+              {band && (
+                <span
+                  className={cn(
+                    "ml-1.5",
+                    isOut(series[hover]) ? "text-alert" : "text-ok",
+                  )}
+                >
+                  {isOut(series[hover]) ? "outside your band" : "in your band"}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
         <div
           aria-hidden
           className="relative mt-1 h-4 text-[11px] text-muted-foreground"

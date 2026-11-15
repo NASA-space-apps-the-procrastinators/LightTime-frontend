@@ -130,9 +130,6 @@ export function AstronautDetail({ crewId }: { crewId: string }) {
                 <h3 className="text-sm font-semibold">
                   <Formula>{`${metricLabel(chartMetric)}, last 7 days`}</Formula>
                 </h3>
-                <span className="text-xs text-muted-foreground">
-                  green band = {crew.name}'s own baseline
-                </span>
                 <SimulatedTag className="ml-auto" />
               </div>
               <TrendChart

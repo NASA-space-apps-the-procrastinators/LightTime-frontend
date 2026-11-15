@@ -31,14 +31,15 @@ export function RegionCards({
     key === "action" && state === "OK" ? OK_ACTION : r[key];
 
   return (
-    <section className="flex flex-col">
+    // One framed section: the header row and the four answers share a border.
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
       <h3>
         <button
           type="button"
           aria-expanded={open}
           aria-controls={panel}
           onClick={() => setOpen((o) => !o)}
-          className="flex min-h-11 w-full items-center gap-2 border border-border bg-card px-4 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="flex min-h-12 w-full items-center gap-2 px-4 text-left text-sm font-semibold hover:bg-tile focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
         >
           What it means and what to do
           <ChevronDown
@@ -61,16 +62,17 @@ export function RegionCards({
         )}
       >
         <div className="min-h-0 overflow-hidden">
+          {/* A 1px gap over the border colour draws hairlines between the four answers. */}
           <div
             className={cn(
-              "grid gap-3 pt-3 transition-transform duration-600 ease-spring motion-reduce:transition-none sm:grid-cols-2",
-              !open && "-translate-y-3 scale-[0.98]",
+              "grid gap-px border-t border-border bg-border transition-transform duration-600 ease-spring motion-reduce:transition-none sm:grid-cols-2",
+              !open && "-translate-y-3",
             )}
           >
             {CARDS.map((c) => (
               <section
                 key={c.key}
-                className="flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-3.5"
+                className="flex flex-col gap-2 bg-card px-4 py-3.5"
               >
                 <h4 className="text-sm font-semibold">{c.title}</h4>
                 <p className="text-sm leading-relaxed text-secondary-foreground">
