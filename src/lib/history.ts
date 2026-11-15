@@ -13,6 +13,8 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 
 /** Seven daily values, oldest first; the last one is today's reading. */
 export function sevenDay(crew: Crew, metric: MetricKey): number[] {
+  const fromShip = crew.live?.week[metric];
+  if (fromShip) return [...fromShip];
   const pinned = PINNED[crew.id]?.[metric];
   if (pinned) return [...pinned];
   const today = metricValue(metric, crew);

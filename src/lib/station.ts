@@ -21,6 +21,7 @@ export type StationReading = {
   state: State;
   gauge: Gauge | null;
   source: string;
+  real?: boolean;
 };
 
 type Rule = "co2" | "ppo2" | "pressure" | "temp" | "rh" | "dose";
@@ -44,17 +45,56 @@ export function stationState(rule: Rule, v: number): State {
   }
 }
 
-export function stationReadings(): StationReading[] {
-  const dose = Math.max(...CREW.map((c) => c.today.dose_mSv_day));
+export type StationValues = {
+  co2_mmHg: number;
+  ppo2_mmHg: number;
+  pressure_kPa: number;
+  temp_c: number;
+  rh_pct: number;
+};
+
+export type StationInput = {
+  values: StationValues;
+  /** Today's dose in mSv. */
+  dose: number;
+  weather: { display: string; note: string; state: State; source: string };
+  /** The values that are a real record, not simulated. Empty in the built-in demo. */
+  real: (keyof StationValues)[];
+  /** Where the real values come from, in the ship's words. */
+  source?: string;
+};
+
+/** The built-in demo's cabin: the seed's numbers and its scripted solar event. */
+export function seedStation(): StationInput {
+  return {
+    values: STATION,
+    dose: Math.max(...CREW.map((c) => c.today.dose_mSv_day)),
+    weather: {
+      display: "SEP event",
+      note: "Shelter advisory",
+      state: "WATCH",
+      source: "Simulated solar particle event",
+    },
+    real: [],
+  };
+}
+
+export function stationReadings(
+  input: StationInput = seedStation(),
+): StationReading[] {
+  const s = input.values;
+  const dose = input.dose;
+  const real = (...keys: (keyof StationValues)[]) =>
+    keys.every((key) => input.real.includes(key));
   return [
     {
       id: "co2",
       label: "Cabin CO2",
-      value: STATION.co2_mmHg,
-      display: String(STATION.co2_mmHg),
+      value: s.co2_mmHg,
+      display: String(s.co2_mmHg),
       unit: "mmHg",
       note: "WATCH from 2.8",
-      state: stationState("co2", STATION.co2_mmHg),
+      state: stationState("co2", s.co2_mmHg),
       gauge: {
         min: 0,
         max: 5,
@@ -65,39 +105,42 @@ export function stationReadings(): StationReading[] {
         ],
       },
       source: "OCHMO CO2 brief (TB-004); NASA-STD-3001 V2 6004",
+      real: real("co2_mmHg"),
     },
     {
       id: "ppo2",
       label: "Cabin ppO2",
-      value: STATION.ppo2_mmHg,
-      display: String(STATION.ppo2_mmHg),
+      value: s.ppo2_mmHg,
+      display: String(s.ppo2_mmHg),
       unit: "mmHg",
       note: "Target 145–155",
-      state: stationState("ppo2", STATION.ppo2_mmHg),
+      state: stationState("ppo2", s.ppo2_mmHg),
       gauge: { min: 135, max: 165, band: [145, 155], marks: [] },
       source: "NASA-STD-3001 V2 6003 (OCHMO-TB-002)",
+      real: real("ppo2_mmHg"),
     },
     {
       id: "pressure",
       label: "Pressure",
-      value: STATION.pressure_kPa,
-      display: String(STATION.pressure_kPa),
+      value: s.pressure_kPa,
+      display: String(s.pressure_kPa),
       unit: "kPa",
       note: "Limit 34.5–103",
-      state: stationState("pressure", STATION.pressure_kPa),
+      state: stationState("pressure", s.pressure_kPa),
       gauge: { min: 30, max: 110, band: [34.5, 103], marks: [] },
       source: "NASA-STD-3001 V2 6006 (OCHMO-TB-002)",
+      real: real("pressure_kPa"),
     },
     {
       id: "temp",
       label: "Temp / RH",
-      value: STATION.temp_c,
-      display: `${STATION.temp_c}°`,
-      unit: `/ ${STATION.rh_pct}%`,
+      value: s.temp_c,
+      display: `${s.temp_c}°`,
+      unit: `/ ${s.rh_pct}%`,
       note: "Zone 20–25 °C",
       state: worst([
-        stationState("temp", STATION.temp_c),
-        stationState("rh", STATION.rh_pct),
+        stationState("temp", s.temp_c),
+        stationState("rh", s.rh_pct),
       ]),
       gauge: {
         min: 15,
@@ -109,6 +152,7 @@ export function stationReadings(): StationReading[] {
         ],
       },
       source: "NASA-STD-3001 V2 6013, V2 6012 (OCHMO-TB-002)",
+      real: real("temp_c", "rh_pct"),
     },
     {
       id: "dose",
@@ -126,16 +170,18 @@ export function stationReadings(): StationReading[] {
       },
       source:
         "thresholds.json (NASA-STD-3001; OCHMO Radiation Protection brief)",
+      real: false,
     },
     {
       id: "space-weather",
       label: "Space weather",
       value: null,
-      display: "SEP event",
-      note: "Shelter advisory",
-      state: "WATCH",
+      display: input.weather.display,
+      note: input.weather.note,
+      state: input.weather.state,
       gauge: null,
-      source: "Simulated solar particle event",
+      source: input.weather.source,
+      real: false,
     },
   ];
 }

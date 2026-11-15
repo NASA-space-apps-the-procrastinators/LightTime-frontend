@@ -9,13 +9,13 @@ import { CheckinSchedule } from "@/components/base-station/checkin-schedule";
 import { CheckinStepper } from "@/components/base-station/checkin-stepper";
 import { ReactionTest } from "@/components/base-station/reaction-test";
 import { Button } from "@/components/ui/button";
-import { getCrew, MISSION } from "@/lib/crew";
+import { MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
 import type { Checkin } from "@/lib/schemas";
 
 export function CheckinFlow({ crewId }: { crewId: string }) {
-  const crew = getCrew(crewId);
-  const { state, dispatch } = useMission();
+  const { state, dispatch, crew: all, ship } = useMission();
+  const crew = all.find((c) => c.id === crewId);
   // Already logged today: open on the summary instead of starting over.
   const [step, setStep] = useState(() => (state.checkins[crewId] ? 5 : 1));
   const [checkin, setCheckin] = useState<Checkin | null>(null);
@@ -25,7 +25,8 @@ export function CheckinFlow({ crewId }: { crewId: string }) {
     <>
       <section className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-border-soft px-4 py-4 md:px-8">
         <h1 className="font-heading text-lg font-bold">
-          {crew.name} · Morning check-in · day {MISSION.mission_day}
+          {crew.name} · Morning check-in · day{" "}
+          {ship?.mission_day ?? MISSION.mission_day}
         </h1>
         <CheckinStepper step={step} />
         <span className="ml-auto text-xs text-muted-foreground">

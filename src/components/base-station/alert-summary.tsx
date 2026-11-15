@@ -1,12 +1,13 @@
+"use client";
+
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { StatePill } from "@/components/shared/state-pill";
 import { TrendChart } from "@/components/shared/trend-chart";
 import { regionForMetric } from "@/data/regions";
-import { getCrew } from "@/lib/crew";
 import { metricLabel, metricUnit } from "@/lib/format";
 import { daysOutOfBand, sevenDay } from "@/lib/history";
-import type { Alert } from "@/lib/mission-store";
+import { type Alert, useMission } from "@/lib/mission-store";
 import type { MetricKey } from "@/lib/schemas";
 import { bandFor, metricStates, metricValue } from "@/lib/scoring";
 import { ruleFor } from "@/lib/thresholds";
@@ -16,7 +17,7 @@ const ORDINAL = ["", "1st", "2nd", "3rd"];
 const ALSO: MetricKey[] = ["temp_c", "sleep_h", "spo2", "resp"];
 
 export function AlertSummary({ alert }: { alert: Alert }) {
-  const crew = getCrew(alert.crewId);
+  const crew = useMission().crew.find((c) => c.id === alert.crewId);
   if (!crew) return null;
   const m = alert.metric;
   const resolved = alert.stage === "resolved";

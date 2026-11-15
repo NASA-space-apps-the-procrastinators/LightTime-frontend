@@ -21,10 +21,10 @@ const BUNDLE: MetricKey[] = [
 ];
 
 export function HealthLog() {
-  const { state } = useMission();
+  const { state, crew } = useMission();
   const [now] = useState(() => new Date());
   // The generator stays pure; what the crew did (acknowledged, sent) is stamped on here.
-  const packets: Packet[] = allPackets(now).map((p) => {
+  const packets: Packet[] = allPackets(now, crew).map((p) => {
     const alerts = state.alerts.filter((a) => a.crewId === p.crew_id);
     const ack =
       alerts.find((a) => a.metric === p.metric)?.acknowledgedAt ?? null;

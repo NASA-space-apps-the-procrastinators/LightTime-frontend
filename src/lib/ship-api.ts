@@ -1,11 +1,20 @@
 import { z } from "zod";
+import { CREW } from "@/lib/crew";
 import type {
   Alert,
   MissionState,
   Reminder,
   ThreadMessage,
 } from "@/lib/mission-store";
-import { METRIC_KEYS } from "@/lib/schemas";
+import {
+  type Crew,
+  crewSchema,
+  METRIC_KEYS,
+  type MetricKey,
+  type State,
+  stateSchema,
+} from "@/lib/schemas";
+import type { StationInput } from "@/lib/station";
 
 /** The ship's address, as it was given when the console was built.
  *  Empty: seed mode, the console runs on its own demo data.
@@ -192,6 +201,127 @@ export function buildMission(input: {
   };
 }
 
+const readingSchema = z.object({
+  at: z.string(),
+  heart_rate: z.number().nullable(),
+  spo2: z.number().nullable(),
+  skin_temp: z.number().nullable(),
+  signal_ok: z.boolean(),
+});
+
+/** A crew member as the ship sends it: the console's Crew, plus the ship's own scoring and the week. */
+const shipCrewSchema = crewSchema.extend({
+  metric_states: z.record(z.string(), stateSchema.nullable()),
+  week: z.record(z.string(), z.array(z.number().nullable())).optional(),
+  last_packet_at: z.string().nullable(),
+  latest: readingSchema.nullable(),
+});
+export type ShipCrew = z.infer<typeof shipCrewSchema>;
+
+const cabinValue = z.object({ value: z.number(), simulated: z.boolean() });
+const shipStationSchema = z.object({
+  co2_mmHg: cabinValue,
+  ppo2_mmHg: cabinValue,
+  pressure_kPa: cabinValue,
+  temp_c: cabinValue,
+  rh_pct: cabinValue,
+  dose_mSv_today: z.object({ value: z.number().nullable() }),
+  source: z.string(),
+});
+export type ShipStation = z.infer<typeof shipStationSchema>;
+
+const shipWeatherSchema = z.object({
+  state: stateSchema,
+  headline: z.string(),
+  advisory: z.string().nullable(),
+  event_at: z.string().nullable(),
+  source: z.string(),
+});
+export type ShipWeather = z.infer<typeof shipWeatherSchema>;
+
+/** A day with no value takes the day before's. Null when no day has one. */
+function filled(days: (number | null)[]): number[] | null {
+  let last = days.find((value) => value !== null) ?? null;
+  if (last === null) return null;
+  const out: number[] = [];
+  for (const value of days) {
+    last = value ?? last;
+    out.push(last);
+  }
+  return out;
+}
+
+/** The ship's crew member as the console's, with what the ship worked out kept beside it. */
+export function toCrew(c: ShipCrew): Crew {
+  const { metric_states, week, last_packet_at, latest, ...person } = c;
+  const metricStates = Object.fromEntries(
+    METRIC_KEYS.map((key) => [key, metric_states[key] ?? "OK"]),
+  ) as Record<MetricKey, State>;
+  const days: Partial<Record<MetricKey, number[]>> = {};
+  for (const key of METRIC_KEYS) {
+    const series = filled(week?.[key] ?? []);
+    if (series) days[key] = series;
+  }
+  return {
+    ...person,
+    live: {
+      state: c.state,
+      metricStates,
+      week: days,
+      lastPacketAt: last_packet_at,
+      latest: latest && {
+        at: latest.at,
+        heartRate: latest.heart_rate,
+        spo2: latest.spo2,
+        skinTemp: latest.skin_temp,
+        signalOk: latest.signal_ok,
+      },
+    },
+  };
+}
+
+const CABIN = [
+  "co2_mmHg",
+  "ppo2_mmHg",
+  "pressure_kPa",
+  "temp_c",
+  "rh_pct",
+] as const;
+
+/** The ship's cabin record as the station strip's input. Which values are a real NASA record is kept. */
+export function toStation(
+  s: ShipStation,
+  w: ShipWeather,
+  crew: Crew[],
+): StationInput {
+  return {
+    values: {
+      co2_mmHg: s.co2_mmHg.value,
+      ppo2_mmHg: s.ppo2_mmHg.value,
+      pressure_kPa: s.pressure_kPa.value,
+      temp_c: s.temp_c.value,
+      rh_pct: s.rh_pct.value,
+    },
+    dose:
+      s.dose_mSv_today.value ??
+      Math.max(...crew.map((c) => c.today.dose_mSv_day)),
+    weather: {
+      display: w.event_at ? "SEP event" : "Quiet",
+      note: w.advisory ? w.advisory.split(":")[0] : w.headline,
+      state: w.state,
+      source: w.source,
+    },
+    real: CABIN.filter((key) => !s[key].simulated),
+    source: s.source,
+  };
+}
+
+/** One object that must fit the shape, or null. */
+function one<T>(schema: z.ZodType<T>, data: unknown): T | null {
+  const parsed = schema.safeParse(data);
+  return parsed.success ? parsed.data : null;
+}
+
 async function request(path: string, init?: RequestInit): Promise<unknown> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -224,10 +354,15 @@ export const ship = {
   },
   reminders: async () =>
     each(shipReminderSchema, await request("/api/base/reminders?open=1")),
-  streak: async () =>
+  today: async () =>
     z
-      .object({ streak: z.number() })
-      .parse(await request("/api/base/checkins/today")).streak,
+      .object({ streak: z.number(), done: z.array(z.string()) })
+      .parse(await request("/api/base/checkins/today")),
+  crew: async () => each(shipCrewSchema, await request("/api/base/crew")),
+  station: async () =>
+    one(shipStationSchema, await request("/api/base/station")),
+  weather: async () =>
+    one(shipWeatherSchema, await request("/api/base/space-weather")),
   post: (path: string, body?: unknown) =>
     request(path, { method: "POST", body: JSON.stringify(body ?? {}) }),
 };
@@ -236,18 +371,31 @@ export const ship = {
 export async function pull(): Promise<{
   state: ShipState;
   mission: Pick<MissionState, "alerts" | "thread" | "reminders" | "streak">;
+  crew: Crew[];
+  checkedIn: string[];
+  station: StationInput | null;
 }> {
-  const [state, alerts, reminders, streak] = await Promise.all([
-    ship.state(),
-    ship.alerts(),
-    ship.reminders(),
-    ship.streak(),
-  ]);
+  const [state, alerts, reminders, today, shipCrew, station, weather] =
+    await Promise.all([
+      ship.state(),
+      ship.alerts(),
+      ship.reminders(),
+      ship.today(),
+      ship.crew(),
+      ship.station(),
+      ship.weather(),
+    ]);
   const open = alerts.filter(
     (a) =>
       a.stage !== "resolved" && METRIC_KEYS.some((key) => key === a.metric),
   );
   const threads = await Promise.all(open.map((a) => ship.thread(a.id)));
+  const live = shipCrew.map(toCrew);
+  // Anyone the ship's answer does not cover keeps their built-in card, so nobody drops off the board.
+  const crew = [
+    ...CREW.map((seed) => live.find((c) => c.id === seed.id) ?? seed),
+    ...live.filter((c) => !CREW.some((seed) => seed.id === c.id)),
+  ];
   return {
     state,
     mission: buildMission({
@@ -255,7 +403,10 @@ export async function pull(): Promise<{
       alerts,
       threads,
       reminders,
-      streak,
+      streak: today.streak,
     }),
+    crew,
+    checkedIn: today.done,
+    station: station && weather ? toStation(station, weather, crew) : null,
   };
 }

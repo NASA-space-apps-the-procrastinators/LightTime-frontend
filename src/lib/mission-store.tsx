@@ -11,8 +11,13 @@ import {
   useState,
 } from "react";
 import { z } from "zod";
-import { GROUND, getCrew } from "@/lib/crew";
-import { type Checkin, checkinSchema, METRIC_KEYS } from "@/lib/schemas";
+import { CREW, GROUND, getCrew, SEEDED_CHECKINS } from "@/lib/crew";
+import {
+  type Checkin,
+  type Crew,
+  checkinSchema,
+  METRIC_KEYS,
+} from "@/lib/schemas";
 import {
   LIVE,
   pull,
@@ -20,6 +25,7 @@ import {
   ship,
   shipAlertSchema,
 } from "@/lib/ship-api";
+import type { StationInput } from "@/lib/station";
 
 const STAGES = [
   "raised",
@@ -261,6 +267,12 @@ const MissionContext = createContext<{
   /** False in live mode when the ship cannot be reached: the console is then on its seed. */
   online: boolean;
   refresh: () => void;
+  /** The crew: from the ship in live mode, the built-in four otherwise. */
+  crew: Crew[];
+  /** Who has checked in today. */
+  checkedIn: string[];
+  /** The cabin, from the ship. Null in the built-in demo. */
+  station: StationInput | null;
 } | null>(null);
 
 /** What an action asks of the ship. Null for actions that stay in the browser. */
@@ -306,6 +318,11 @@ export function MissionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<MissionState | null>(null);
   const [shipState, setShipState] = useState<ShipState | null>(null);
   const [online, setOnline] = useState(false);
+  const [board, setBoard] = useState<{
+    crew: Crew[];
+    checkedIn: string[];
+    station: StationInput | null;
+  } | null>(null);
   const latest = useRef<MissionState | null>(null);
   const busy = useRef(false);
   latest.current = state;
@@ -314,8 +331,9 @@ export function MissionProvider({ children }: { children: ReactNode }) {
     if (!LIVE || busy.current) return;
     busy.current = true;
     pull()
-      .then(({ state: fromShip, mission }) => {
+      .then(({ state: fromShip, mission, crew, checkedIn, station }) => {
         setShipState(fromShip);
+        setBoard({ crew, checkedIn, station });
         setOnline(true);
         // Sound and this session's check-ins are the browser's. Everything else is the ship's.
         setState((s) => ({
@@ -327,6 +345,7 @@ export function MissionProvider({ children }: { children: ReactNode }) {
       .catch(() => {
         setOnline(false);
         setShipState(null);
+        setBoard(null);
         // First load with no ship: fall back to the built-in demo so the console is never blank.
         setState((s) => s ?? createInitialMission(new Date()));
       })
@@ -385,9 +404,24 @@ export function MissionProvider({ children }: { children: ReactNode }) {
       </p>
     );
 
+  const crew = board?.crew ?? CREW;
+  const checkedIn = board?.checkedIn ?? [
+    ...SEEDED_CHECKINS,
+    ...Object.keys(state.checkins),
+  ];
+
   return (
     <MissionContext.Provider
-      value={{ state, dispatch, ship: shipState, online, refresh }}
+      value={{
+        state,
+        dispatch,
+        ship: shipState,
+        online,
+        refresh,
+        crew,
+        checkedIn,
+        station: board?.station ?? null,
+      }}
     >
       {children}
     </MissionContext.Provider>
