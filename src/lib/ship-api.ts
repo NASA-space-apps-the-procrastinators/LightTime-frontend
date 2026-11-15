@@ -11,6 +11,8 @@ import {
   crewSchema,
   METRIC_KEYS,
   type MetricKey,
+  type Packet,
+  packetSchema,
   type State,
   stateSchema,
 } from "@/lib/schemas";
@@ -408,5 +410,42 @@ export async function pull(): Promise<{
     crew,
     checkedIn: today.done,
     station: station && weather ? toStation(station, weather, crew) : null,
+  };
+}
+
+const healthSchema = z.object({
+  sensors: z.array(
+    z.object({
+      source: z.string(),
+      lowest_signal_quality: z.number(),
+      state: z.enum(["OK", "RECHECK"]),
+    }),
+  ),
+});
+
+/** The health log from the ship: the suits' minute packets, each sensor's lowest signal, and what went to Earth today. */
+export async function shipLog(): Promise<{
+  packets: Packet[];
+  sentToday: number;
+  health: { source: string; lowest: number; state: "OK" | "RECHECK" }[];
+}> {
+  const [log, health] = await Promise.all([
+    request("/api/base/packets?limit=200"),
+    request("/api/base/stream-health"),
+  ]);
+  const parsed = z
+    .object({
+      packets: z.array(z.unknown()),
+      transmitted_to_ground_today: z.number(),
+    })
+    .parse(log);
+  return {
+    packets: each(packetSchema, parsed.packets),
+    sentToday: parsed.transmitted_to_ground_today,
+    health: healthSchema.parse(health).sensors.map((sensor) => ({
+      source: sensor.source,
+      lowest: sensor.lowest_signal_quality,
+      state: sensor.state,
+    })),
   };
 }
