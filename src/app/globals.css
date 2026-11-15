@@ -282,3 +282,52 @@
 .body-float {
   animation: body-float 5s ease-in-out infinite;
 }
+
+/* Boot screen: lines print in turn (delays set inline), then the whole screen fades at 2.2 s (gone by 2.5 s) and stops catching clicks. */
+.boot {
+  animation: boot-out 300ms ease-in 2200ms forwards;
+}
+.booted .boot {
+  display: none;
+}
+.boot-show {
+  opacity: 0;
+  animation: boot-show 1ms linear forwards;
+}
+/* Width in ch with steps, so the dots print one character at a time. */
+.boot-dots {
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  vertical-align: bottom;
+  animation: boot-dots steps(3, end) forwards;
+}
+.boot-cursor {
+  animation: boot-blink 1s steps(1) infinite;
+}
+@keyframes boot-show {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes boot-dots {
+  to {
+    width: 3ch;
+  }
+}
+@keyframes boot-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes boot-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot {
+    display: none;
+  }
+}

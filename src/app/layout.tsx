@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
+import { BOOT_SCRIPT, BootScreen } from "@/components/shared/boot-screen";
 import { TourProvider } from "@/components/shared/tour";
 import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
@@ -52,11 +53,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: a fixed string from this repo, run before paint to pick the theme
-          dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: fixed strings from this repo, run before paint to pick the theme and skip a seen boot screen
+          dangerouslySetInnerHTML={{ __html: THEME_SCRIPT + BOOT_SCRIPT }}
         />
       </head>
       <body className="min-h-full flex flex-col">
+        <BootScreen />
         <TourProvider>{children}</TourProvider>
       </body>
     </html>
