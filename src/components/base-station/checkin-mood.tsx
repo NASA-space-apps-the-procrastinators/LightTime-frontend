@@ -161,7 +161,7 @@ export function CheckinMood({
                 aria-pressed={on}
                 onClick={() => toggle(s.toLowerCase())}
                 className={cn(
-                  "min-h-10 rounded-full border px-3.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "min-h-11 rounded-full border px-3.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   on
                     ? "border-primary bg-border-soft"
                     : "border-border-strong bg-card",
@@ -179,7 +179,7 @@ export function CheckinMood({
               setNone(true);
             }}
             className={cn(
-              "min-h-10 rounded-full border px-3.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+              "min-h-11 rounded-full border px-3.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
               none
                 ? "border-primary bg-border-soft"
                 : "border-border-strong bg-card",

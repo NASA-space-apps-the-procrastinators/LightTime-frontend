@@ -8,7 +8,10 @@ export default function BaseStationLayout({
     <div className="flex min-h-full flex-1 flex-col">
       <ConsoleEffects />
       <AppHeader />
-      <main className="flex flex-1 flex-col">{children}</main>
+      {/* Room for the phone tab bar, which is fixed to the bottom. */}
+      <main className="flex flex-1 flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+        {children}
+      </main>
     </div>
   );
 }

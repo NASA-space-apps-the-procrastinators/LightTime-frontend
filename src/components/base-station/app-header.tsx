@@ -1,8 +1,18 @@
 "use client";
 
-import { RotateCcw, Volume2, VolumeX } from "lucide-react";
+import {
+  ClipboardCheck,
+  RotateCcw,
+  ScrollText,
+  TriangleAlert,
+  UserRound,
+  Users,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { NotifyButton } from "@/components/base-station/notify-button";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { Button } from "@/components/ui/button";
 import { MISSION } from "@/lib/crew";
@@ -10,11 +20,15 @@ import { useMission } from "@/lib/mission-store";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { label: "Crew", href: "/base-station" },
-  { label: "Astronaut", href: "/base-station/crew/C1" },
-  { label: "Check-in", href: "/base-station/crew/C1/check-in" },
-  { label: "Alerts", href: "/base-station/alerts/A1" },
-  { label: "Log", href: "/base-station/log" },
+  { label: "Crew", href: "/base-station", icon: Users },
+  { label: "Astronaut", href: "/base-station/crew/C1", icon: UserRound },
+  {
+    label: "Check-in",
+    href: "/base-station/crew/C1/check-in",
+    icon: ClipboardCheck,
+  },
+  { label: "Alerts", href: "/base-station/alerts/A1", icon: TriangleAlert },
+  { label: "Log", href: "/base-station/log", icon: ScrollText },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -37,10 +51,14 @@ export function AppHeader() {
   const [lo, hi] = MISSION.mars_light_time_min;
   const audioAvailable = typeof globalThis.AudioContext === "function";
   const soundOn = audioAvailable && state.soundOn;
+  const restart = () => {
+    dispatch({ type: "reset" });
+    router.push("/base-station");
+  };
 
   return (
     <header className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8">
-      <Link href="/base-station" className="flex items-center gap-2.5">
+      <Link href="/base-station" className="flex min-h-11 items-center gap-2.5">
         <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
           <circle
             cx="13"
@@ -65,7 +83,8 @@ export function AppHeader() {
 
       <nav
         aria-label="Main"
-        className="order-last -mx-1 flex w-full gap-5 overflow-x-auto px-1 text-sm lg:order-none lg:w-auto"
+        // Phones: a fixed bottom tab bar. md and up: inline links in the header.
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border-soft bg-tile/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:static md:order-last md:-mx-1 md:flex md:w-full md:gap-5 md:overflow-x-auto md:border-0 md:bg-transparent md:px-1 md:pb-0 md:text-sm md:backdrop-blur-none lg:order-none lg:w-auto"
       >
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
@@ -75,19 +94,20 @@ export function AppHeader() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "whitespace-nowrap border-b-2 py-1.5",
+                "flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap border-t-2 text-[11px] font-medium md:min-h-0 md:flex-row md:border-t-0 md:border-b-2 md:py-1.5 md:text-sm md:font-normal",
                 active
-                  ? "border-primary font-semibold text-foreground"
+                  ? "border-primary text-primary md:font-semibold md:text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
+              <item.icon aria-hidden className="size-5 md:hidden" />
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
+      <div className="flex flex-wrap items-center md:ml-auto gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
         <span className="hidden md:inline">
           {MISSION.platform} · Mission day{" "}
           <strong className="text-foreground">{MISSION.mission_day}</strong>
@@ -101,6 +121,7 @@ export function AppHeader() {
           </span>
         </span>
         <SimulatedTag />
+        <NotifyButton />
         <Button
           variant="outline"
           size="sm"
@@ -111,7 +132,7 @@ export function AppHeader() {
               : "Sound is not available in this browser"
           }
           onClick={() => dispatch({ type: "toggleSound" })}
-          className="min-h-9"
+          className="min-h-11 md:min-h-9"
         >
           {soundOn ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
           {soundOn ? "Sound on" : "Sound off"}
@@ -119,11 +140,8 @@ export function AppHeader() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => {
-            dispatch({ type: "reset" });
-            router.push("/base-station");
-          }}
-          className="min-h-9"
+          onClick={restart}
+          className="min-h-11 md:min-h-9"
         >
           <RotateCcw aria-hidden />
           Restart demo
