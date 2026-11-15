@@ -1,3 +1,5 @@
+import { Formula } from "@/components/shared/formula";
+
 const SCHEDULE = [
   ["Vitals + mood + sleep", "daily, morning"],
   ["Reaction test", "daily"],
@@ -21,7 +23,9 @@ export function CheckinSchedule() {
           key={what}
           className="flex justify-between gap-3 border-b border-border-soft py-1.5 text-[13px] last:border-0"
         >
-          <span>{what}</span>
+          <span>
+            <Formula>{what}</Formula>
+          </span>
           <span className="text-right text-muted-foreground">{when}</span>
         </div>
       ))}

@@ -9,7 +9,7 @@ export function CheckinCuff({ onDone }: { onDone: () => void }) {
       <p className="text-sm leading-relaxed text-secondary-foreground">
         Fasten the arm cuff over the sleeve and sit still for 2 minutes. Keep
         your arm at heart level. The suit will capture heart rate, blood
-        pressure, SpO2, temperature and breathing automatically.
+        pressure, SpO<sub>2</sub>, temperature and breathing automatically.
       </p>
       <div>
         <Button onClick={onDone} className="min-h-11">

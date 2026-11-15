@@ -1,5 +1,6 @@
 "use client";
 
+import { Formula } from "@/components/shared/formula";
 import { StatePill } from "@/components/shared/state-pill";
 import { REGIONS, type RegionId } from "@/data/regions";
 import { metricLabel, metricUnit } from "@/lib/format";
@@ -56,7 +57,7 @@ export function MetricTiles({
             )}
           >
             <span className="text-[11px] text-muted-foreground">
-              {metricLabel(m)}
+              <Formula>{metricLabel(m)}</Formula>
             </span>
             <span className="text-2xl font-bold">
               {metricValue(m, crew)}{" "}

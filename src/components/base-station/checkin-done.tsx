@@ -6,7 +6,7 @@ import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
 import { regionForMetric } from "@/data/regions";
 import { CREW, SEEDED_CHECKINS } from "@/lib/crew";
-import { metricLabel } from "@/lib/format";
+import { inSentence } from "@/lib/format";
 import { useMission } from "@/lib/mission-store";
 import type { Crew, MetricKey } from "@/lib/schemas";
 
@@ -19,6 +19,7 @@ const SUIT_METRICS: MetricKey[] = [
   "resp",
 ];
 
+import { Formula } from "@/components/shared/formula";
 import { metricStates, scoreMetric } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +51,7 @@ export function CheckinDone({ crew }: { crew: Crew }) {
   const attention = [
     ...new Set(
       SUIT_METRICS.filter((m) => s[m] === "ALERT").map((m) =>
-        m === "bp_sys" || m === "bp_dia"
-          ? "blood pressure"
-          : metricLabel(m).toLowerCase(),
+        m === "bp_sys" || m === "bp_dia" ? "blood pressure" : inSentence(m),
       ),
     ),
   ];
@@ -94,7 +93,7 @@ export function CheckinDone({ crew }: { crew: Crew }) {
           {attention.length === 1
             ? "1 reading needs attention"
             : `${attention.length} readings need attention`}
-          : {attention.join(", ")}.
+          : <Formula>{attention.join(", ")}</Formula>.
         </p>
       )}
 

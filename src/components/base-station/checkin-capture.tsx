@@ -1,3 +1,4 @@
+import { Formula } from "@/components/shared/formula";
 import { StatePill } from "@/components/shared/state-pill";
 import { Button } from "@/components/ui/button";
 import { metricLabel, metricUnit } from "@/lib/format";
@@ -58,7 +59,9 @@ export function CheckinCapture({
               )}
             >
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] text-muted-foreground">{label}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  <Formula>{label}</Formula>
+                </div>
                 <div className="text-lg font-bold">
                   {value}{" "}
                   <span className="text-xs font-medium text-muted-foreground">

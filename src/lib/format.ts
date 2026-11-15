@@ -29,6 +29,10 @@ const UNITS: Record<MetricKey, string> = {
 export const metricLabel = (m: MetricKey) => LABELS[m];
 export const metricUnit = (m: MetricKey) => UNITS[m];
 
+/** The metric name mid-sentence: lowercase, except formulas such as SpO2 keep their capitals. */
+export const inSentence = (m: MetricKey) =>
+  /O2/.test(LABELS[m]) ? LABELS[m] : LABELS[m].toLowerCase();
+
 /** Local 24-hour HH:MM. */
 export function clock(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", {

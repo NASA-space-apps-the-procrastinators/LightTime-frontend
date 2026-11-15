@@ -2,10 +2,11 @@
 
 import { ArrowRight, BellRing } from "lucide-react";
 import Link from "next/link";
+import { Formula } from "@/components/shared/formula";
 import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
 import { CREW, getCrew, SEEDED_CHECKINS } from "@/lib/crew";
-import { clock, metricLabel, metricUnit } from "@/lib/format";
+import { clock, inSentence, metricUnit } from "@/lib/format";
 import { type AlertStage, useMission } from "@/lib/mission-store";
 import { allPackets } from "@/lib/packets";
 import { METRIC_KEYS } from "@/lib/schemas";
@@ -28,7 +29,7 @@ export function AlertsRail() {
     const s = metricStates(c);
     return METRIC_KEYS.filter((m) => s[m] === "WATCH").map((m) => ({
       key: `${c.id}-${m}`,
-      title: `${c.name} · ${metricLabel(m).toLowerCase()} ${metricValue(m, c)} ${metricUnit(m)}`,
+      title: `${c.name} · ${inSentence(m)} ${metricValue(m, c)} ${metricUnit(m)}`,
     }));
   });
   const done = CREW.filter(
@@ -60,7 +61,7 @@ export function AlertsRail() {
               <span className="flex items-center gap-2">
                 <StatePill state="ALERT" />
                 <strong className="text-[13px]">
-                  {crew.name} · {metricLabel(a.metric).toLowerCase()}{" "}
+                  {crew.name} · <Formula>{inSentence(a.metric)}</Formula>{" "}
                   {metricValue(a.metric, crew)} {metricUnit(a.metric)}
                 </strong>
               </span>
@@ -77,7 +78,9 @@ export function AlertsRail() {
           >
             <div className="flex items-center gap-2">
               <StatePill state="WATCH" />
-              <strong className="text-[13px]">{w.title}</strong>
+              <strong className="text-[13px]">
+                <Formula>{w.title}</Formula>
+              </strong>
             </div>
             <div className="mt-1 text-[11px] text-muted-foreground">
               Outside baseline once · silent, in the daily summary
@@ -94,7 +97,7 @@ export function AlertsRail() {
               <div className="flex items-center gap-2">
                 <StatePill state="WATCH" />
                 <strong className="text-[13px]">
-                  {r.label} {r.display} {r.unit}
+                  <Formula>{r.label}</Formula> {r.display} {r.unit}
                 </strong>
               </div>
               <div className="mt-1 text-[11px] text-muted-foreground">
@@ -128,7 +131,7 @@ export function AlertsRail() {
           {due && (
             <Link
               href={`/base-station/crew/${due.id}/check-in`}
-              className={cn(buttonVariants({ size: "sm" }), "ml-auto min-h-10")}
+              className={cn(buttonVariants({ size: "sm" }), "ml-auto min-h-11")}
             >
               Start check-in <ArrowRight aria-hidden />
             </Link>
@@ -183,7 +186,10 @@ export function AlertsRail() {
       >
         <div className="flex items-center">
           <h2 className="text-[15px] font-semibold">Recent packets</h2>
-          <Link href="/base-station/log" className="ml-auto text-xs text-link">
+          <Link
+            href="/base-station/log"
+            className="ml-auto inline-flex min-h-11 items-center text-xs text-link md:min-h-0"
+          >
             Full log →
           </Link>
         </div>

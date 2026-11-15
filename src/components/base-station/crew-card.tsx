@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { Formula } from "@/components/shared/formula";
 import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
 import { clock } from "@/lib/format";
@@ -32,7 +33,7 @@ function Tile({
       className={cn("rounded-lg border px-2.5 py-2", TILE_TINT[state])}
     >
       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-        {label}
+        <Formula>{label}</Formula>
         {state !== "OK" && (
           <span
             className={cn(
@@ -145,7 +146,7 @@ export function CrewCard({ crew }: { crew: Crew }) {
           />
         </div>
 
-        <p className="text-xs text-muted-foreground">{crew.note}</p>
+        <p className="text-sm text-muted-foreground md:text-xs">{crew.note}</p>
 
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
           <span>Mission dose {t.dose_mSv_mission} mSv</span>
@@ -154,7 +155,7 @@ export function CrewCard({ crew }: { crew: Crew }) {
               href={`/base-station/crew/${crew.id}/check-in`}
               className={cn(
                 buttonVariants({ size: "sm" }),
-                "relative z-10 ml-auto min-h-9",
+                "relative z-10 ml-auto min-h-11 md:min-h-9",
               )}
             >
               Start check-in
