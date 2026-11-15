@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { Logo } from "@/components/shared/logo";
+import { GROUND as STAFF } from "@/lib/crew";
 import { clock } from "@/lib/format";
 import { API_URL, LIVE, span } from "@/lib/ship-api";
 import { cn } from "@/lib/utils";
@@ -276,7 +277,7 @@ export function EarthConsole() {
       body: JSON.stringify({
         alert_id: c.alert_id,
         text: body,
-        from: "Flight surgeon",
+        from: STAFF.flight_surgeon,
       }),
     }).then(() => {
       setDrafts((d) => ({ ...d, [c.alert_id]: "" }));

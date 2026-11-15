@@ -3,28 +3,28 @@
   "mission": {"name": "Expedition demo", "mission_day": 158, "platform": "ISS", "one_way_light_time_s": 0.6, "mars_light_time_min": [4, 24]},
   "crew": [
     {
-      "id": "C1", "name": "Okafor", "role": "Commander", "suit_id": "LT-01",
+      "id": "C1", "name": "TJ", "role": "Commander", "suit_id": "LT-01",
       "state": "ALERT",
       "note": "Resting HR +22 bpm over baseline for 3 days; headache; 5.1 h sleep",
       "baseline": {"hr_rest": [52, 64], "bp": [[108, 122], [66, 78]], "spo2": [96, 99], "temp_c": [36.3, 36.9], "resp": [12, 16], "sleep_h": [6.8, 7.6], "pvt_ms": 265, "vo2max_ml_min_kg": 44.0},
       "today": {"hr_rest": 84, "bp": [128, 82], "spo2": 97, "temp_c": 37.2, "resp": 17, "sleep_h": 5.1, "mood": 2, "pvt_ms": 312, "symptoms": ["headache", "short sleep"], "dose_mSv_day": 0.51, "dose_mSv_mission": 81.0}
     },
     {
-      "id": "C2", "name": "Linda Rodenburg", "role": "Flight engineer", "suit_id": "LT-02",
+      "id": "C2", "name": "Rebecca", "role": "Crew Medical Officer", "suit_id": "LT-02",
       "state": "WATCH",
       "note": "Sleep 6.1 h last night; everything else in band",
       "baseline": {"hr_rest": [55, 67], "bp": [[110, 124], [68, 80]], "spo2": [96, 99], "temp_c": [36.2, 36.8], "resp": [12, 17], "sleep_h": [6.9, 7.8], "pvt_ms": 251, "vo2max_ml_min_kg": 47.5},
       "today": {"hr_rest": 61, "bp": [118, 74], "spo2": 98, "temp_c": 36.6, "resp": 14, "sleep_h": 6.1, "mood": 3, "pvt_ms": 262, "symptoms": [], "dose_mSv_day": 0.50, "dose_mSv_mission": 79.6}
     },
     {
-      "id": "C3", "name": "Sato", "role": "Science officer", "suit_id": "LT-03",
+      "id": "C3", "name": "Kyler", "role": "Flight Engineer", "suit_id": "LT-03",
       "state": "OK",
       "note": "All in band; check-in done 06:12",
       "baseline": {"hr_rest": [50, 62], "bp": [[104, 118], [62, 76]], "spo2": [97, 99], "temp_c": [36.2, 36.8], "resp": [11, 15], "sleep_h": [7.0, 7.9], "pvt_ms": 243, "vo2max_ml_min_kg": 49.2},
       "today": {"hr_rest": 56, "bp": [112, 70], "spo2": 98, "temp_c": 36.5, "resp": 13, "sleep_h": 7.4, "mood": 4, "pvt_ms": 249, "symptoms": [], "dose_mSv_day": 0.49, "dose_mSv_mission": 78.9}
     },
     {
-      "id": "C4", "name": "Rebecca Qi", "role": "Medical officer", "suit_id": "LT-04",
+      "id": "C4", "name": "David", "role": "Mission Specialist", "suit_id": "LT-04",
       "state": "OK",
       "note": "All in band; exercise 118 min today",
       "baseline": {"hr_rest": [54, 66], "bp": [[110, 126], [68, 82]], "spo2": [96, 99], "temp_c": [36.3, 36.9], "resp": [12, 16], "sleep_h": [6.9, 7.7], "pvt_ms": 258, "vo2max_ml_min_kg": 45.8},
@@ -32,5 +32,5 @@
     }
   ],
   "station_today": {"co2_mmHg": 2.6, "ppo2_mmHg": 158, "pressure_kPa": 101.2, "temp_c": 22.4, "rh_pct": 44, "space_weather": "SEP event (DONKI) - shelter advisory"},
-  "ground": {"flight_surgeon": "Dr. Adeyemi"}
+  "ground": {"flight_surgeon": "Dr. Damola", "backup_flight_surgeon": "Dr. Youssef"}
 }

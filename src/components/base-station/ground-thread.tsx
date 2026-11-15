@@ -25,7 +25,13 @@ export function GroundThread({ alert }: { alert: Alert }) {
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-[15px] font-semibold">
           Thread with ground
-          {!ship && <> · Flight surgeon on console: {GROUND.flight_surgeon}</>}
+          {!ship && (
+            <>
+              {" "}
+              · Flight surgeon on console: {GROUND.flight_surgeon} (backup{" "}
+              {GROUND.backup_flight_surgeon})
+            </>
+          )}
         </h2>
         {!ship && (
           <SimulatedTag label="SIMULATED flight surgeon" className="ml-auto" />

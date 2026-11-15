@@ -4,7 +4,7 @@ import { bandFor, metricValue } from "@/lib/scoring";
 // Fixed day-to-day wobble as a fraction of the band's half-width: stable, no randomness.
 const WOBBLE = [0, 0.15, -0.1, 0.1, -0.15, 0.05];
 
-// Okafor's week is the demo's story: resting HR climbs out of band for the last 3 days.
+// TJ's week is the demo's story: resting HR climbs out of band for the last 3 days.
 const PINNED: Record<string, Partial<Record<MetricKey, number[]>>> = {
   C1: { hr_rest: [60, 61, 59, 62, 80, 82, 84] },
 };
