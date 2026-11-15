@@ -24,7 +24,6 @@ export const metadata: Metadata = {
     siteName: "Light Time",
     title: "Light Time",
     description,
-    url: "/",
     locale: "en_US",
   },
   twitter: {
