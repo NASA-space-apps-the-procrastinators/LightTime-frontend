@@ -24,10 +24,9 @@ export type Region = {
   how: string;
   worry: string;
   action: string;
-  source: string;
 };
 
-// Copy ported from Light Time/design/Astronaut.dc.html. NASA-STD-3001 V1 3004 is "In-Mission Medical Care".
+// Copy ported from Light Time/design/Astronaut.dc.html.
 export const REGIONS: Record<RegionId, Region> = {
   head: {
     label: "Head",
@@ -42,8 +41,6 @@ export const REGIONS: Record<RegionId, Region> = {
       "Three nights under 6 h, or mood 2 or lower for two days, warrants a conversation with the ground behavioral team.",
     action:
       "Protect tonight’s sleep window, dim lights 1 h before, log caffeine. Eye check due day 165.",
-    source:
-      "NASA Human System Risks: sleep loss; OCHMO Behavioral Health brief; SANS brief",
   },
   heart: {
     label: "Heart",
@@ -58,8 +55,6 @@ export const REGIONS: Record<RegionId, Region> = {
       "Resting HR more than 20 bpm over baseline for 3 days, any irregular rhythm, or BP outside your pre-flight range on two cuff readings.",
     action:
       "Re-measure BP now, hydrate, log symptoms. This alert has already been raised: acknowledge it and send to the flight surgeon.",
-    source:
-      "NASA-STD-3001 V1 3004 In-Mission Medical Care; HRP Cardiovascular evidence report 2022; OCHMO Orthostatic Intolerance brief",
   },
   lungs: {
     label: "Lungs",
@@ -74,7 +69,6 @@ export const REGIONS: Record<RegionId, Region> = {
       "SpO2 under 94%, breathing rate over 20 at rest, or headache while CO2 is above 2.8 mmHg.",
     action:
       "Nothing now. If headache appears, move to a better-ventilated module and report.",
-    source: "OCHMO Carbon Dioxide brief; NASA Human System Risks: CO2, hypoxia",
   },
   gut: {
     label: "Nutrition",
@@ -88,8 +82,6 @@ export const REGIONS: Record<RegionId, Region> = {
     worry:
       "Fasting glucose outside 70 to 110 mg/dL, intake under 80% of target for a week, or dark urine.",
     action: "Add 400 mL water today; vitamin D dose due tonight.",
-    source:
-      "OCHMO Food and Nutrition brief; NASA Human System Risks: renal stones",
   },
   spine: {
     label: "Spine and bone",
@@ -104,7 +96,6 @@ export const REGIONS: Record<RegionId, Region> = {
       "Estimated BMD trending to the 95% floor, or a missed week of resistance exercise.",
     action:
       "Restore 6 ARED sessions a week; confirm vitamin D 25-OH is in the 35 to 90 ng/mL range at the next blood draw.",
-    source: "OCHMO Bone Loss brief; NASA-STD-3001 V1 4027",
   },
   legs: {
     label: "Legs",
@@ -118,8 +109,6 @@ export const REGIONS: Record<RegionId, Region> = {
     worry:
       "Either measure under 85% (watch) or 80% (alert), or a 20% drop in weekly exercise minutes.",
     action: "Weekly strength test is due Friday.",
-    source:
-      "OCHMO Exercise Overview brief; HRP Aerobic and Muscle evidence report 2024",
   },
   skin: {
     label: "Skin",
@@ -134,7 +123,6 @@ export const REGIONS: Record<RegionId, Region> = {
       "Temperature over 38 °C, or daily dose over 2 mSv, or a SEP shelter advisory.",
     action:
       "SEP event in progress: stay in the shielded module until the advisory clears; re-check temperature in 4 h.",
-    source: "OCHMO Radiation Protection brief; RadLab; DONKI SEP notifications",
   },
 };
 
