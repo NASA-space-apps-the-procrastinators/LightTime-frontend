@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { alertHeadline } from "@/lib/alerts";
-import { getCrew } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
 
 /** NotifyButton fires this after the user grants permission. */
@@ -34,7 +33,7 @@ function writeShown(ids: Set<string>) {
  * shortcut: raised by the open app, not server Web Push; real push needs a backend (VAPID).
  */
 export function useNotifications(): void {
-  const { state, dispatch } = useMission();
+  const { state, dispatch, crew } = useMission();
   const [granted, setGranted] = useState(
     () =>
       typeof Notification !== "undefined" &&
@@ -72,8 +71,9 @@ export function useNotifications(): void {
     if (!granted || !("serviceWorker" in navigator)) return;
     const shown = readShown();
     for (const a of state.alerts) {
-      const crew = getCrew(a.crewId);
-      if (a.stage !== "raised") {
+      const person = crew.find((c) => c.id === a.crewId);
+      // A ship alert at WATCH (a LIGHTTIME caution) is silent, like every WATCH.
+      if (a.stage !== "raised" || a.live?.state === "WATCH") {
         // Moved on (acknowledged here or elsewhere): its notification's Acknowledge would do nothing.
         if (!shown.delete(a.id)) continue;
         navigator.serviceWorker.ready
@@ -84,23 +84,28 @@ export function useNotifications(): void {
           .catch(() => {});
         continue;
       }
-      if (!crew || shown.has(a.id)) continue;
+      if (!person || shown.has(a.id)) continue;
       shown.add(a.id);
+      // Live: the ship's own sentence, which also covers alerts LIGHTTIME raised on its own metrics.
+      const what = a.live ? a.live.reason : alertHeadline(person, a.metric);
       navigator.serviceWorker.ready
         .then((reg) =>
-          reg.showNotification("Light Time ALERT", {
-            body: `${crew.name} · ${alertHeadline(crew, a.metric)}. Acknowledge to silence the console beep.`,
-            tag: a.id,
-            data: { alertId: a.id },
-            requireInteraction: true,
-            // `actions` is in Chrome but not yet in TypeScript's NotificationOptions.
-            ...{
-              actions: [
-                { action: "ack", title: "Acknowledge" },
-                { action: "open", title: "Open" },
-              ],
+          reg.showNotification(
+            `Light Time ${a.live?.state === "SOS" ? "SOS" : "ALERT"}`,
+            {
+              body: `${person.name} · ${what}. Acknowledge to silence the console beep.`,
+              tag: a.id,
+              data: { alertId: a.id },
+              requireInteraction: true,
+              // `actions` is in Chrome but not yet in TypeScript's NotificationOptions.
+              ...{
+                actions: [
+                  { action: "ack", title: "Acknowledge" },
+                  { action: "open", title: "Open" },
+                ],
+              },
             },
-          }),
+          ),
         )
         .catch(() => {
           const now = readShown();
@@ -109,5 +114,21 @@ export function useNotifications(): void {
         });
     }
     writeShown(shown);
-  }, [state.alerts, granted]);
+  }, [state.alerts, crew, granted]);
+}
+
+/**
+ * Forget which alerts were notified and close their notifications. Called on restart:
+ * the ship numbers alerts from the start again, so an old id would block a new alert.
+ */
+export function clearNotifications(): void {
+  writeShown(new Set());
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator))
+    return;
+  navigator.serviceWorker.ready
+    .then((reg) => reg.getNotifications())
+    .then((ns) => {
+      for (const n of ns) n.close();
+    })
+    .catch(() => {});
 }
