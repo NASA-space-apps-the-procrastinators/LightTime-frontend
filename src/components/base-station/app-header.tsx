@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   Ellipsis,
   Globe,
+  Play,
   RotateCcw,
   ScrollText,
   TriangleAlert,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Dial } from "@/components/base-station/dial";
 import { NotifyButton } from "@/components/base-station/notify-button";
 import { SuitsButton } from "@/components/base-station/suits-button";
@@ -28,6 +29,9 @@ import { MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
 import { LIVE, span } from "@/lib/ship-api";
 import { cn } from "@/lib/utils";
+
+/** Set once "Start story" is clicked, so the border beam stops for that viewer. */
+const STORY_SEEN_KEY = "lighttime.story-seen";
 
 const NAV = [
   { label: "Crew", href: "/base-station", icon: Users },
@@ -59,6 +63,13 @@ export function AppHeader() {
   const router = useRouter();
   const { state, dispatch, ship, online } = useMission();
   const tour = useTour();
+  // Starts true so the server render and first paint agree; the effect turns the beam on for first-timers.
+  const [storySeen, setStorySeen] = useState(true);
+  useEffect(() => {
+    try {
+      setStorySeen(localStorage.getItem(STORY_SEEN_KEY) === "1");
+    } catch {}
+  }, []);
   const [lo, hi] = MISSION.mars_light_time_min;
   const audioAvailable = typeof globalThis.AudioContext === "function";
   const soundOn = audioAvailable && state.soundOn;
@@ -237,12 +248,21 @@ export function AppHeader() {
           <Dial />
           <SuitsButton />
           <Button
-            variant="outline"
             size="sm"
-            className="min-h-11 shrink-0 md:ml-auto md:min-h-9"
+            className={cn(
+              "min-h-11 shrink-0 md:ml-auto md:min-h-9",
+              !storySeen && "border-beam",
+            )}
             title="A click-through tour of the console, ending with a live emergency at Mars distance"
-            onClick={tour.start}
+            onClick={() => {
+              try {
+                localStorage.setItem(STORY_SEEN_KEY, "1");
+              } catch {}
+              setStorySeen(true);
+              tour.start();
+            }}
           >
+            <Play aria-hidden className="fill-current" />
             Start story
           </Button>
         </div>

@@ -102,6 +102,7 @@
   --primary: #a3e635;
   --primary-foreground: #0f172a;
   --active: #4d7c0f;
+  --beam: #4d7c0f; /* the Start-story beam: dark lime reads on a light page */
   --secondary: #f3f5f9;
   --secondary-foreground: #374151;
   --muted: #f3f5f9;
@@ -151,6 +152,7 @@
   --primary: #bef264;
   --primary-foreground: #0b1120;
   --active: #bef264;
+  --beam: #ffffff; /* lime would vanish into the lime button */
   --secondary: #172036;
   --secondary-foreground: #cbd5e1;
   --muted: #172036;
@@ -225,6 +227,39 @@
 .alert-pulse {
   animation: alert-pulse 1200ms ease-in-out infinite;
 }
+/* "Start story" until first click: a light running round the edge. Never red; red is ALERT.
+   Drawn inside the button's own box so the sideways-scrolling phone row can't clip it. */
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes border-beam {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+.border-beam {
+  position: relative;
+}
+.border-beam::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 70%,
+    var(--beam) 92%,
+    transparent
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: border-beam 3.5s linear infinite;
+  pointer-events: none;
+}
 /* Panels folding into bars and back: one spring for the box, a quick crossfade inside it.
    The snapshots are clipped, not scaled, so a narrow bar never balloons tall while it widens. */
 ::view-transition-group(.fold) {
@@ -255,6 +290,10 @@
   .body-scan,
   .body-float {
     animation: none;
+  }
+  .border-beam::before {
+    animation: none;
+    background: var(--beam);
   }
 }
 
