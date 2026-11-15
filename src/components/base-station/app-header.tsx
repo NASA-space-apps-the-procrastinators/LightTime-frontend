@@ -17,6 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useId, useRef } from "react";
 import { Dial } from "@/components/base-station/dial";
 import { NotifyButton } from "@/components/base-station/notify-button";
+import { Logo } from "@/components/shared/logo";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { clearNotifications } from "@/hooks/use-notifications";
@@ -73,27 +74,8 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8">
-      <Link href="/base-station" className="flex min-h-11 items-center gap-2.5">
-        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
-          <circle
-            cx="13"
-            cy="13"
-            r="11"
-            fill="none"
-            stroke="var(--primary)"
-            strokeWidth="2"
-          />
-          <path
-            d="M13 5v8l5 3"
-            fill="none"
-            stroke="var(--foreground)"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-        <span className="font-heading text-lg font-bold tracking-wide">
-          Light Time
-        </span>
+      <Link href="/base-station" className="flex min-h-11 items-center">
+        <Logo />
       </Link>
 
       <nav
@@ -152,14 +134,14 @@ export function AppHeader() {
       <div className="flex items-center gap-3 max-md:ml-auto">
         <Link
           href="/command-center"
-          aria-label="Earth console"
           title="Earth console"
           className={cn(
-            buttonVariants({ variant: "outline", size: "icon" }),
-            "size-11 md:hidden",
+            // no colour variant: black with white text, set here
+            buttonVariants({ variant: null, size: "sm" }),
+            "min-h-11 bg-foreground text-background hover:bg-foreground/85 md:hidden",
           )}
         >
-          <Globe aria-hidden />
+          Go to Earth
         </Link>
         <Button
           variant="outline"
@@ -182,7 +164,8 @@ export function AppHeader() {
           size="icon"
           aria-label="More"
           popoverTarget={menuId}
-          className="size-11 md:size-9"
+          // Phones keep the top row to Earth and sound.
+          className="size-11 max-md:hidden md:size-9"
         >
           <Ellipsis aria-hidden />
         </Button>
