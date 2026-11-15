@@ -397,12 +397,7 @@ export function MissionProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
-  if (!state)
-    return (
-      <p className="p-8 text-sm text-muted-foreground" aria-live="polite">
-        Loading console…
-      </p>
-    );
+  if (!state) return null; // the boot screen covers this first load
 
   const crew = board?.crew ?? CREW;
   const checkedIn = board?.checkedIn ?? [

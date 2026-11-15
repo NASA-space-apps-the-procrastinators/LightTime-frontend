@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
+import { BOOT_SCRIPT, BootScreen } from "@/components/shared/boot-screen";
 import { StatsReporter } from "@/components/shared/stats-reporter";
 import { TourProvider } from "@/components/shared/tour";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -12,10 +13,26 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
 });
 
+const description =
+  "Health monitoring for astronauts: body suit, dashboard, flight surgeon.";
+
 export const metadata: Metadata = {
+  // Share previews need absolute image URLs; same domain the Dockerfile builds against.
+  metadataBase: new URL("https://lighttime.health"),
   title: "Light Time",
-  description:
-    "Health monitoring for astronauts: body suit, dashboard, flight surgeon.",
+  description,
+  openGraph: {
+    type: "website",
+    siteName: "Light Time",
+    title: "Light Time",
+    description,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Light Time",
+    description,
+  },
 };
 
 // cover: lets the phone tab bar pad itself clear of the home indicator.
@@ -37,11 +54,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: a fixed string from this repo, run before paint to pick the theme
-          dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: fixed strings from this repo, run before paint to pick the theme and skip a seen boot screen
+          dangerouslySetInnerHTML={{ __html: THEME_SCRIPT + BOOT_SCRIPT }}
         />
       </head>
       <body className="min-h-full flex flex-col">
+        <BootScreen />
         <StatsReporter />
         <TourProvider>{children}</TourProvider>
       </body>

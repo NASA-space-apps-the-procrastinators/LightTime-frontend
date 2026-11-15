@@ -50,9 +50,15 @@ export const STEPS: TourStep[] = [
   },
   {
     route: "/base-station",
+    targets: ['section[aria-label="Station environment"]'],
+    title: "The air they breathe",
+    text: "The cabin itself: CO₂, oxygen, pressure, temperature, radiation and space weather, each against its NASA limit. An orange border means WATCH. Far from Earth, nobody can fix the air in time, so the ship watches it.",
+  },
+  {
+    route: "/base-station",
     targets: ['section[aria-label="Crew"]'],
     title: "The crew at a glance",
-    text: "Each card compares one crew member with their own normal readings, not with an average person. Green is OK, yellow is WATCH, red is ALERT. The station gauges above check the cabin the same way.",
+    text: "Each card compares one crew member with their own normal readings, not with an average person. Green is OK, yellow is WATCH, red is ALERT.",
   },
   {
     route: "/base-station",
