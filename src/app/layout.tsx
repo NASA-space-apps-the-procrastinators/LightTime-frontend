@@ -11,10 +11,27 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
 });
 
+const description =
+  "Health monitoring for astronauts: body suit, dashboard, flight surgeon.";
+
 export const metadata: Metadata = {
+  // Share previews need absolute image URLs; same domain the Dockerfile builds against.
+  metadataBase: new URL("https://lighttime.health"),
   title: "Light Time",
-  description:
-    "Health monitoring for astronauts: body suit, dashboard, flight surgeon.",
+  description,
+  openGraph: {
+    type: "website",
+    siteName: "Light Time",
+    title: "Light Time",
+    description,
+    url: "/",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Light Time",
+    description,
+  },
 };
 
 // cover: lets the phone tab bar pad itself clear of the home indicator.
