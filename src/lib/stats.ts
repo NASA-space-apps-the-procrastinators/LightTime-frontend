@@ -9,8 +9,10 @@ let started = false;
 
 /** Counts one page view or click for the ship's traffic stats. Sent in batches; nothing in seed mode. */
 export function report(kind: StatKind, name: string): void {
-  if (!LIVE || !name) return;
-  queue.push({ kind, name });
+  // The ship refuses a whole batch over one blank name, and keeps 80 characters.
+  const cut = name.trim().slice(0, 80);
+  if (!LIVE || !cut) return;
+  queue.push({ kind, name: cut });
   if (started) return;
   started = true;
   setInterval(send, 5000);
@@ -20,14 +22,16 @@ export function report(kind: StatKind, name: string): void {
 function send(): void {
   while (queue.length > 0) {
     const events = queue.slice(0, BATCH);
-    queue = queue.slice(BATCH);
     // text/plain needs no CORS preflight; the ship reads the body as JSON whatever its type.
-    navigator.sendBeacon(
+    const sent = navigator.sendBeacon(
       `${API_URL}/api/stats/events`,
       new Blob([JSON.stringify({ events })], {
         type: "text/plain;charset=UTF-8",
       }),
     );
+    // A beacon the browser refuses (its quota is full) stays queued for the next try.
+    if (!sent) return;
+    queue = queue.slice(BATCH);
   }
 }
 

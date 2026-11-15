@@ -14,6 +14,8 @@ export function StatsReporter() {
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
+      // The app ignores a double-click's second press (alert-actions.tsx), so this does too.
+      if (e.detail > 1) return;
       const name = clickName(e.target);
       if (name) report("click", name);
     };
