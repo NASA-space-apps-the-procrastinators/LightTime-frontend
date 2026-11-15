@@ -82,7 +82,7 @@ export function StationStrip() {
         )}
         {open.length > 0 && (
           <div
-            className="grid flex-1 grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-(--cols)"
+            className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] xl:grid-cols-(--cols)"
             style={
               {
                 "--cols": `repeat(${open.length}, minmax(0, 1fr))`,
