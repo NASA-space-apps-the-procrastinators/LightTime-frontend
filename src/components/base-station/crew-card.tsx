@@ -115,6 +115,7 @@ export function CrewCard({
 
   return (
     <article
+      data-tour={`crew:${crew.id}`}
       data-pulsing={pulsing}
       style={onToggle && foldName(`crew-${crew.id}`)}
       className={cn(
