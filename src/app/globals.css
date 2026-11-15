@@ -10,17 +10,21 @@
   --font-sans: var(--font-manrope), system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-space-grotesk), var(--font-manrope), sans-serif;
-  /* State colours: reserved for OK / WATCH / ALERT only. */
-  --color-ok: #15803d;
-  --color-ok-bg: #dcfce7;
-  --color-watch: #b45309;
-  --color-watch-bg: #fef3c7;
-  --color-alert: #dc2626;
-  --color-alert-bg: #fee2e2;
-  --color-tile: #f3f5f9;
-  --color-border-soft: #e3e8f0;
-  --color-border-strong: #b7c1d1;
-  --color-link: #1d4ed8;
+  /* State colours: reserved for OK / WATCH / ALERT only. Values per theme below. */
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-watch: var(--watch);
+  --color-watch-bg: var(--watch-bg);
+  /* Yellow for marks only (rings, dots, lines); text keeps --color-watch for contrast. */
+  --color-watch-mark: var(--watch-mark);
+  --color-alert: var(--alert);
+  --color-alert-bg: var(--alert-bg);
+  --color-tile: var(--tile);
+  --color-border-soft: var(--border-soft);
+  --color-border-strong: var(--border-strong);
+  /* The accent as text, borders and strokes: lime only works as a fill, so light mode darkens it. */
+  --color-active: var(--active);
+  --color-link: var(--active);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -87,7 +91,7 @@
   );
 }
 
-/* Light theme from "Light Time/data/design-tokens.json". */
+/* Light theme. The accent is lime, shared with the Earth console: a fill with dark text. */
 :root {
   --background: #f6f7fb;
   --foreground: #111827;
@@ -95,8 +99,9 @@
   --card-foreground: #111827;
   --popover: #ffffff;
   --popover-foreground: #111827;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
+  --primary: #a3e635;
+  --primary-foreground: #0f172a;
+  --active: #4d7c0f;
   --secondary: #f3f5f9;
   --secondary-foreground: #374151;
   --muted: #f3f5f9;
@@ -106,8 +111,8 @@
   --destructive: #dc2626;
   --border: #d5dce6;
   --input: #d5dce6;
-  --ring: #2563eb;
-  --chart-1: #2563eb;
+  --ring: #65a30d;
+  --chart-1: #65a30d;
   --chart-2: #15803d;
   --chart-3: #b45309;
   --chart-4: #dc2626;
@@ -116,12 +121,69 @@
   --radius: 0px;
   --sidebar: #ffffff;
   --sidebar-foreground: #111827;
-  --sidebar-primary: #2563eb;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: #a3e635;
+  --sidebar-primary-foreground: #0f172a;
   --sidebar-accent: #f3f5f9;
   --sidebar-accent-foreground: #111827;
   --sidebar-border: #d5dce6;
-  --sidebar-ring: #2563eb;
+  --sidebar-ring: #65a30d;
+  --ok: #15803d;
+  --ok-bg: #dcfce7;
+  --watch: #b45309;
+  --watch-bg: #fef3c7;
+  --watch-mark: #eab308;
+  --alert: #dc2626;
+  --alert-bg: #fee2e2;
+  --tile: #f3f5f9;
+  --border-soft: #e3e8f0;
+  --border-strong: #b7c1d1;
+}
+
+/* Dark theme: the Earth console's night. Panels are slightly see-through over the sky. */
+.dark {
+  color-scheme: dark;
+  --background: #070c18;
+  --foreground: #f1f5f9;
+  --card: rgb(15 23 42 / 0.78);
+  --card-foreground: #f1f5f9;
+  --popover: #0f1729;
+  --popover-foreground: #f1f5f9;
+  --primary: #bef264;
+  --primary-foreground: #0b1120;
+  --active: #bef264;
+  --secondary: #172036;
+  --secondary-foreground: #cbd5e1;
+  --muted: #172036;
+  --muted-foreground: #94a3b8;
+  --accent: #1b2540;
+  --accent-foreground: #f1f5f9;
+  --destructive: #fb7185;
+  --border: rgb(255 255 255 / 0.12);
+  --input: rgb(255 255 255 / 0.16);
+  --ring: #bef264;
+  --chart-1: #bef264;
+  --chart-2: #4ade80;
+  --chart-3: #fbbf24;
+  --chart-4: #fb7185;
+  --chart-5: #94a3b8;
+  --sidebar: #0b1222;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #bef264;
+  --sidebar-primary-foreground: #0b1120;
+  --sidebar-accent: #172036;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: rgb(255 255 255 / 0.12);
+  --sidebar-ring: #bef264;
+  --ok: #86efac;
+  --ok-bg: rgb(74 222 128 / 0.14);
+  --watch: #fcd34d;
+  --watch-bg: rgb(251 191 36 / 0.14);
+  --watch-mark: #facc15;
+  --alert: #fb7185;
+  --alert-bg: rgb(251 113 133 / 0.16);
+  --tile: rgb(255 255 255 / 0.04);
+  --border-soft: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(255 255 255 / 0.24);
 }
 
 @layer base {
@@ -130,6 +192,20 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(
+        120% 55% at 50% 125%,
+        rgb(56 189 248 / 0.2),
+        rgb(249 115 22 / 0.06) 38%,
+        transparent 62%
+      ),
+      radial-gradient(1px 1px at 12% 18%, #64748b 50%, transparent 51%),
+      radial-gradient(1px 1px at 68% 9%, #475569 50%, transparent 51%),
+      radial-gradient(1px 1px at 87% 31%, #64748b 50%, transparent 51%),
+      radial-gradient(1px 1px at 33% 41%, #475569 50%, transparent 51%);
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
@@ -176,4 +252,33 @@
     animation: none;
     box-shadow: 0 0 0 3px rgb(220 38 38 / 0.35);
   }
+  .body-scan,
+  .body-float {
+    animation: none;
+  }
+}
+
+/* Body map: a scan band sweeping head to toe, and a slow float. Transform only, so nothing reflows. */
+@keyframes body-scan {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+.body-scan {
+  animation: body-scan 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes body-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.body-float {
+  animation: body-float 5s ease-in-out infinite;
 }

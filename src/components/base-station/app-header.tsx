@@ -17,6 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useId, useRef } from "react";
 import { Dial } from "@/components/base-station/dial";
 import { NotifyButton } from "@/components/base-station/notify-button";
+import { ThemeToggle } from "@/components/base-station/theme-toggle";
 import { Logo } from "@/components/shared/logo";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -91,10 +92,11 @@ export function AppHeader() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap border-t-2 text-[11px] font-medium md:min-h-0 md:flex-row md:border-t-0 md:border-b-2 md:py-1.5 md:text-sm md:font-normal",
+                "flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap text-[11px] font-medium md:min-h-0 md:flex-row md:py-1.5 md:text-sm",
+                // Active: the text takes the active colour; never a filled or rounded button.
                 active
-                  ? "border-primary text-primary md:font-semibold md:text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
+                  ? "font-bold text-active"
+                  : "text-muted-foreground hover:text-foreground",
                 item.href === "/command-center" && "max-md:hidden",
               )}
             >
@@ -177,6 +179,7 @@ export function AppHeader() {
           className="fixed inset-auto top-16 right-4 m-0 w-60 rounded-xl border border-border bg-card p-1.5 text-sm text-foreground shadow-lg md:right-8"
         >
           <NotifyButton variant="ghost" className="h-11 w-full justify-start" />
+          <ThemeToggle className="h-11 w-full justify-start" />
           <Button
             variant="ghost"
             onClick={() => {

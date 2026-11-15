@@ -13,7 +13,7 @@ export function Logo({ className }: { className?: string }) {
           cy="13"
           r="11"
           fill="none"
-          stroke="var(--primary)"
+          stroke="var(--active)"
           strokeWidth="2"
         />
         <path

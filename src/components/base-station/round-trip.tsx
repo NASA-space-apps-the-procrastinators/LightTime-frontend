@@ -45,7 +45,7 @@ export function RoundTrip({ alert }: { alert: Alert }) {
                 className={cn(
                   "flex size-7 shrink-0 items-center justify-center rounded-full border-2",
                   time && "border-ok bg-ok text-white",
-                  isCurrent && "border-primary",
+                  isCurrent && "border-active",
                   !time && !isCurrent && "border-border-strong",
                 )}
               >

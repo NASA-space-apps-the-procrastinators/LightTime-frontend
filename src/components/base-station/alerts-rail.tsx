@@ -208,7 +208,7 @@ export function AlertsRail() {
               >
                 <div className="flex items-center justify-between">
                   <h2 className="flex items-center gap-2 text-[15px] font-semibold">
-                    <BellRing aria-hidden className="size-4 text-primary" />
+                    <BellRing aria-hidden className="size-4 text-active" />
                     Reminders
                   </h2>
                   <FoldButton

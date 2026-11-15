@@ -30,44 +30,44 @@ type Tone = {
 // red and amber that mean ALERT and WATCH; the state is always the pill's word.
 const TONE: Record<string, Tone> = {
   heart: {
-    tint: "bg-pink-100 text-pink-700",
+    tint: "bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300",
     solid: "bg-pink-600 text-white",
     border: "border-pink-600",
     track: "bg-pink-600/15",
     bar: "bg-pink-600",
-    text: "text-pink-700",
+    text: "text-pink-700 dark:text-pink-300",
   },
   oxygen: {
-    tint: "bg-sky-100 text-sky-700",
+    tint: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
     solid: "bg-sky-600 text-white",
     border: "border-sky-600",
     track: "bg-sky-600/15",
     bar: "bg-sky-600",
-    text: "text-sky-700",
+    text: "text-sky-700 dark:text-sky-300",
   },
   pressure: {
-    tint: "bg-violet-100 text-violet-700",
+    tint: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
     solid: "bg-violet-600 text-white",
     border: "border-violet-600",
     track: "bg-violet-600/15",
     bar: "bg-violet-600",
-    text: "text-violet-700",
+    text: "text-violet-700 dark:text-violet-300",
   },
   temperature: {
-    tint: "bg-orange-100 text-orange-700",
+    tint: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
     solid: "bg-orange-600 text-white",
     border: "border-orange-600",
     track: "bg-orange-600/15",
     bar: "bg-orange-600",
-    text: "text-orange-700",
+    text: "text-orange-700 dark:text-orange-300",
   },
   breathing: {
-    tint: "bg-teal-100 text-teal-700",
+    tint: "bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300",
     solid: "bg-teal-600 text-white",
     border: "border-teal-600",
     track: "bg-teal-600/15",
     bar: "bg-teal-600",
-    text: "text-teal-700",
+    text: "text-teal-700 dark:text-teal-300",
   },
 };
 
@@ -167,7 +167,7 @@ export function CheckinCapture({
               strokeDashoffset={RING * (1 - elapsed / durationMs)}
               className={cn(
                 "motion-safe:transition-[stroke-dashoffset] motion-safe:duration-300",
-                finished ? "stroke-ok" : "stroke-primary",
+                finished ? "stroke-ok" : "stroke-active",
               )}
             />
           </svg>
