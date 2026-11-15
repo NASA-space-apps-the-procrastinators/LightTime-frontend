@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
+import { StatsReporter } from "@/components/shared/stats-reporter";
 import { TourProvider } from "@/components/shared/tour";
 import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col">
+        <StatsReporter />
         <TourProvider>{children}</TourProvider>
       </body>
     </html>
