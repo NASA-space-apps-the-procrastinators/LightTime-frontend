@@ -3,10 +3,12 @@
 import { RotateCcw, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Dial } from "@/components/base-station/dial";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { Button } from "@/components/ui/button";
 import { MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
+import { LIVE, ship as shipApi, span } from "@/lib/ship-api";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -33,7 +35,7 @@ function isActive(pathname: string, href: string) {
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { state, dispatch } = useMission();
+  const { state, dispatch, ship, online, refresh } = useMission();
   const [lo, hi] = MISSION.mars_light_time_min;
   const audioAvailable = typeof globalThis.AudioContext === "function";
   const soundOn = audioAvailable && state.soundOn;
@@ -88,18 +90,68 @@ export function AppHeader() {
       </nav>
 
       <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
-        <span className="hidden md:inline">
-          {MISSION.platform} · Mission day{" "}
-          <strong className="text-foreground">{MISSION.mission_day}</strong>
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1">
-          <span aria-hidden className="size-1.5 rounded-full bg-ok" />
-          Ground link {MISSION.one_way_light_time_s} s one-way
-          <span className="hidden xl:inline">
-            {" "}
-            (Mars: {lo} to {hi} min)
+        {LIVE && !online && (
+          <span className="font-semibold text-alert">
+            Ship unreachable: built-in demo
           </span>
+        )}
+        <span className="hidden md:inline">
+          {ship?.platform ?? MISSION.platform} · Mission day{" "}
+          <strong className="text-foreground">
+            {ship?.mission_day ?? MISSION.mission_day}
+          </strong>
         </span>
+        {ship ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1",
+              ship.link_up ? "border-border" : "border-alert text-alert",
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "size-1.5 rounded-full",
+                ship.link_up ? "bg-ok" : "bg-alert",
+              )}
+            />
+            {ship.link_up
+              ? `Earth is ${span(ship.delay_s)} away · earliest reply ${span(ship.round_trip_s)}`
+              : "No link to Earth"}
+            <span className="hidden xl:inline"> · {ship.who_decides}</span>
+            {ship.link_up && ship.delay_s >= 60 && (
+              <span className="hidden text-[11px] xl:inline">
+                {" "}
+                (plays as {span(ship.plays_as_s)})
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1">
+            <span aria-hidden className="size-1.5 rounded-full bg-ok" />
+            Ground link {MISSION.one_way_light_time_s} s one-way
+            <span className="hidden xl:inline">
+              {" "}
+              (Mars: {lo} to {hi} min)
+            </span>
+          </span>
+        )}
+        <Dial />
+        {ship && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-9"
+            title="Play the scripted emergency: blood oxygen falls for the commander"
+            onClick={() =>
+              shipApi
+                .post("/api/base/scenario/start", { name: "stage" })
+                .then(refresh, refresh)
+            }
+          >
+            Start story
+          </Button>
+        )}
         <SimulatedTag />
         <Button
           variant="outline"
