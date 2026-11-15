@@ -2,9 +2,11 @@
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { FoldButton } from "@/components/shared/fold";
 import { Formula } from "@/components/shared/formula";
 import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
+import { foldName } from "@/hooks/use-folded";
 import { at, clock } from "@/lib/format";
 import { useMission } from "@/lib/mission-store";
 import { packetsFor } from "@/lib/packets";
@@ -83,7 +85,21 @@ function SuitNow({ crew, now }: { crew: Crew; now?: string }) {
   );
 }
 
-export function CrewCard({ crew }: { crew: Crew }) {
+/**
+ * With `onToggle`, the card gets a grip that folds it down to its header row. `wide` spans both
+ * board columns and lays the six tiles in one row.
+ */
+export function CrewCard({
+  crew,
+  folded = false,
+  wide = false,
+  onToggle,
+}: {
+  crew: Crew;
+  folded?: boolean;
+  wide?: boolean;
+  onToggle?: () => void;
+}) {
   const { state, checkedIn: done, ship } = useMission();
   const s = metricStates(crew);
   const overall = crewState(crew);
@@ -100,8 +116,10 @@ export function CrewCard({ crew }: { crew: Crew }) {
   return (
     <article
       data-pulsing={pulsing}
+      style={onToggle && foldName(`crew-${crew.id}`)}
       className={cn(
         "relative flex flex-col overflow-hidden rounded-xl border bg-card",
+        wide && "md:col-span-2",
         STATE_BORDER[overall],
         pulsing && "alert-pulse",
       )}
@@ -127,74 +145,90 @@ export function CrewCard({ crew }: { crew: Crew }) {
             </div>
           </div>
           <StatePill state={overall} />
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <Tile
-            id="hr"
-            label="HR"
-            value={String(t.hr_rest)}
-            unit="bpm"
-            state={s.hr_rest}
-          />
-          <Tile
-            id="bp"
-            label="BP"
-            value={`${t.bp[0]}/${t.bp[1]}`}
-            state={worst([s.bp_sys, s.bp_dia])}
-          />
-          <Tile
-            id="spo2"
-            label="SpO2"
-            value={String(t.spo2)}
-            unit="%"
-            state={s.spo2}
-          />
-          <Tile
-            id="temp"
-            label="Temp"
-            value={String(t.temp_c)}
-            unit="°C"
-            state={s.temp_c}
-          />
-          <Tile
-            id="sleep"
-            label="Sleep"
-            value={String(t.sleep_h)}
-            unit="h"
-            state={s.sleep_h}
-          />
-          <Tile
-            id="mood"
-            label="Mood"
-            value={String(t.mood)}
-            unit="/5"
-            state={s.mood}
-          />
-        </div>
-
-        <SuitNow crew={crew} now={ship?.now} />
-        <p className="text-sm text-muted-foreground md:text-xs">{crew.note}</p>
-
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-          <span>Mission dose {t.dose_mSv_mission} mSv</span>
-          {needsCheckin ? (
-            <Link
-              href={`/base-station/crew/${crew.id}/check-in`}
-              className={cn(
-                buttonVariants({ size: "sm" }),
-                "relative z-10 ml-auto min-h-11 md:min-h-9",
-              )}
-            >
-              Start check-in
-              <ArrowRight aria-hidden />
-            </Link>
-          ) : (
-            <span aria-hidden className="ml-auto text-link">
-              Open →
-            </span>
+          {onToggle && (
+            <FoldButton
+              label={crew.name}
+              folded={folded}
+              onClick={onToggle}
+              className="relative z-10 -mr-1.5"
+            />
           )}
         </div>
+
+        {!folded && (
+          <>
+            <div
+              className={cn("grid grid-cols-3 gap-2", wide && "md:grid-cols-6")}
+            >
+              <Tile
+                id="hr"
+                label="HR"
+                value={String(t.hr_rest)}
+                unit="bpm"
+                state={s.hr_rest}
+              />
+              <Tile
+                id="bp"
+                label="BP"
+                value={`${t.bp[0]}/${t.bp[1]}`}
+                state={worst([s.bp_sys, s.bp_dia])}
+              />
+              <Tile
+                id="spo2"
+                label="SpO2"
+                value={String(t.spo2)}
+                unit="%"
+                state={s.spo2}
+              />
+              <Tile
+                id="temp"
+                label="Temp"
+                value={String(t.temp_c)}
+                unit="°C"
+                state={s.temp_c}
+              />
+              <Tile
+                id="sleep"
+                label="Sleep"
+                value={String(t.sleep_h)}
+                unit="h"
+                state={s.sleep_h}
+              />
+              <Tile
+                id="mood"
+                label="Mood"
+                value={String(t.mood)}
+                unit="/5"
+                state={s.mood}
+              />
+            </div>
+
+            <SuitNow crew={crew} now={ship?.now} />
+            <p className="text-sm text-muted-foreground md:text-xs">
+              {crew.note}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+              <span>Mission dose {t.dose_mSv_mission} mSv</span>
+              {needsCheckin ? (
+                <Link
+                  href={`/base-station/crew/${crew.id}/check-in`}
+                  className={cn(
+                    buttonVariants({ size: "sm" }),
+                    "relative z-10 ml-auto min-h-11 md:min-h-9",
+                  )}
+                >
+                  Start check-in
+                  <ArrowRight aria-hidden />
+                </Link>
+              ) : (
+                <span aria-hidden className="ml-auto text-link">
+                  Open →
+                </span>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </article>
   );

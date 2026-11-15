@@ -149,7 +149,29 @@
 .alert-pulse {
   animation: alert-pulse 1200ms ease-in-out infinite;
 }
+/* Panels folding into bars and back: one spring for the box, a quick crossfade inside it.
+   The snapshots are clipped, not scaled, so a narrow bar never balloons tall while it widens. */
+::view-transition-group(.fold) {
+  animation-duration: 600ms;
+  animation-timing-function: var(--ease-spring);
+}
+::view-transition-image-pair(.fold) {
+  overflow: clip;
+  border-radius: 0.75rem;
+}
+::view-transition-old(.fold),
+::view-transition-new(.fold) {
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+  animation-duration: 220ms;
+}
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
   .alert-pulse {
     animation: none;
     box-shadow: 0 0 0 3px rgb(220 38 38 / 0.35);
