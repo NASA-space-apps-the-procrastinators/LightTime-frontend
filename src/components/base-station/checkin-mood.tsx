@@ -126,9 +126,13 @@ export function CheckinMood({
           type="number"
           inputMode="decimal"
           step="0.1"
+          min="0"
+          max="24"
           value={sleep}
           onChange={(e) => {
-            setSleep(e.target.value);
+            const v = e.target.value;
+            // A night has at most 24 hours: anything typed above that snaps back to 24.
+            setSleep(v !== "" && Number(v) > 24 ? "24" : v);
             setErrors(({ sleep_h: _, ...rest }) => rest);
           }}
           aria-invalid={Boolean(errors.sleep_h)}
