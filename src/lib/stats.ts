@@ -40,7 +40,8 @@ export function statName(el: Element): string {
   return (
     el.getAttribute("data-stat") ||
     el.getAttribute("aria-label") ||
-    (el.textContent ?? "").trim().slice(0, 40)
+    // A button's text can run over lines; the ship joins runs of whitespace the same way.
+    (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 40)
   );
 }
 
