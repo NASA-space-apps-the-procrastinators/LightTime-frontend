@@ -10,7 +10,7 @@
       "today": {"hr_rest": 84, "bp": [128, 82], "spo2": 97, "temp_c": 37.2, "resp": 17, "sleep_h": 5.1, "mood": 2, "pvt_ms": 312, "symptoms": ["headache", "short sleep"], "dose_mSv_day": 0.51, "dose_mSv_mission": 81.0}
     },
     {
-      "id": "C2", "name": "Lindqvist", "role": "Flight engineer", "suit_id": "LT-02",
+      "id": "C2", "name": "Linda Rodenburg", "role": "Flight engineer", "suit_id": "LT-02",
       "state": "WATCH",
       "note": "Sleep 6.1 h last night; everything else in band",
       "baseline": {"hr_rest": [55, 67], "bp": [[110, 124], [68, 80]], "spo2": [96, 99], "temp_c": [36.2, 36.8], "resp": [12, 17], "sleep_h": [6.9, 7.8], "pvt_ms": 251, "vo2max_ml_min_kg": 47.5},
