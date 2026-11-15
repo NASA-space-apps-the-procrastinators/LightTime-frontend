@@ -93,7 +93,6 @@ export function AppHeader() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              data-tour={item.href === "/command-center" ? "earth" : undefined}
               className={cn(
                 "flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap text-[11px] font-medium md:min-h-0 md:flex-row md:py-1.5 md:text-sm",
                 // Active: the text takes the active colour; never a filled or rounded button.
@@ -245,18 +244,6 @@ export function AppHeader() {
             }
           >
             Start story
-          </Button>
-          <Button
-            size="sm"
-            className="min-h-11 shrink-0 md:min-h-9"
-            title="A 30 second guided tour: a short emergency with a bubble explaining each step"
-            onClick={() =>
-              shipApi
-                .post("/api/base/demo/start", { name: "tour" })
-                .then(refresh, refresh)
-            }
-          >
-            Take the tour
           </Button>
         </div>
       )}
