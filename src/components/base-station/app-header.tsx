@@ -143,9 +143,11 @@ export function AppHeader() {
             size="sm"
             className="min-h-9"
             title="Play the scripted emergency: blood oxygen falls for the commander"
+            // "full": the oxygen drifts down first, so LIGHTTIME's time-left warning comes before
+            // the SOS. "stage" drops at once and gives no time left.
             onClick={() =>
               shipApi
-                .post("/api/base/scenario/start", { name: "stage" })
+                .post("/api/base/scenario/start", { name: "full" })
                 .then(refresh, refresh)
             }
           >

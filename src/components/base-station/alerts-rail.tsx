@@ -58,10 +58,14 @@ export function AlertsRail() {
               )}
             >
               <span className="flex items-center gap-2">
-                <StatePill state="ALERT" />
+                <StatePill
+                  state={a.live?.state === "WATCH" ? "WATCH" : "ALERT"}
+                  label={a.live?.state === "SOS" ? "SOS" : undefined}
+                />
                 <strong className="text-[13px]">
                   {crew.name} · {metricLabel(a.metric).toLowerCase()}{" "}
-                  {metricValue(a.metric, crew)} {metricUnit(a.metric)}
+                  {a.live?.value ?? metricValue(a.metric, crew)}{" "}
+                  {metricUnit(a.metric)}
                 </strong>
               </span>
               <span className="mt-1 block text-[11px] text-muted-foreground">
