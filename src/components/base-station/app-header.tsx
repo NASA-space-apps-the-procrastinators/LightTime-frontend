@@ -2,6 +2,7 @@
 
 import {
   ClipboardCheck,
+  Globe,
   RotateCcw,
   ScrollText,
   TriangleAlert,
@@ -12,11 +13,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Dial } from "@/components/base-station/dial";
 import { NotifyButton } from "@/components/base-station/notify-button";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { Button } from "@/components/ui/button";
 import { MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
+import { LIVE, ship as shipApi, span } from "@/lib/ship-api";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -47,7 +50,7 @@ function isActive(pathname: string, href: string) {
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { state, dispatch } = useMission();
+  const { state, dispatch, ship, online, refresh } = useMission();
   const [lo, hi] = MISSION.mars_light_time_min;
   const audioAvailable = typeof globalThis.AudioContext === "function";
   const soundOn = audioAvailable && state.soundOn;
@@ -55,6 +58,9 @@ export function AppHeader() {
     dispatch({ type: "reset" });
     router.push("/base-station");
   };
+  const nav = LIVE
+    ? [...NAV, { label: "Earth", href: "/command-center", icon: Globe }]
+    : NAV;
 
   return (
     <header className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8">
@@ -84,9 +90,9 @@ export function AppHeader() {
       <nav
         aria-label="Main"
         // Phones: a fixed bottom tab bar. md and up: inline links in the header.
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border-soft bg-tile/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:static md:order-last md:-mx-1 md:flex md:w-full md:gap-5 md:overflow-x-auto md:border-0 md:bg-transparent md:px-1 md:pb-0 md:text-sm md:backdrop-blur-none lg:order-none lg:w-auto"
+        className="fixed inset-x-0 bottom-0 z-40 grid auto-cols-fr grid-flow-col border-t border-border-soft bg-tile/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:static md:order-last md:-mx-1 md:flex md:w-full md:gap-5 md:overflow-x-auto md:border-0 md:bg-transparent md:px-1 md:pb-0 md:text-sm md:backdrop-blur-none lg:order-none lg:w-auto"
       >
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
@@ -107,19 +113,71 @@ export function AppHeader() {
         })}
       </nav>
 
-      <div className="flex flex-wrap items-center md:ml-auto gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
-        <span className="hidden md:inline">
-          {MISSION.platform} · Mission day{" "}
-          <strong className="text-foreground">{MISSION.mission_day}</strong>
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1">
-          <span aria-hidden className="size-1.5 rounded-full bg-ok" />
-          Ground link {MISSION.one_way_light_time_s} s one-way
-          <span className="hidden xl:inline">
-            {" "}
-            (Mars: {lo} to {hi} min)
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground md:ml-auto">
+        {LIVE && !online && (
+          <span className="font-semibold text-alert">
+            Ship unreachable: built-in demo
           </span>
+        )}
+        <span className="hidden md:inline">
+          {ship?.platform ?? MISSION.platform} · Mission day{" "}
+          <strong className="text-foreground">
+            {ship?.mission_day ?? MISSION.mission_day}
+          </strong>
         </span>
+        {ship ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1",
+              ship.link_up ? "border-border" : "border-alert text-alert",
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "size-1.5 rounded-full",
+                ship.link_up ? "bg-ok" : "bg-alert",
+              )}
+            />
+            {ship.link_up
+              ? `Earth is ${span(ship.delay_s)} away · earliest reply ${span(ship.round_trip_s)}`
+              : "No link to Earth"}
+            <span className="hidden xl:inline"> · {ship.who_decides}</span>
+            {ship.link_up && ship.delay_s >= 60 && (
+              <span className="hidden text-[11px] xl:inline">
+                {" "}
+                (plays as {span(ship.plays_as_s)})
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1">
+            <span aria-hidden className="size-1.5 rounded-full bg-ok" />
+            Ground link {MISSION.one_way_light_time_s} s one-way
+            <span className="hidden xl:inline">
+              {" "}
+              (Mars: {lo} to {hi} min)
+            </span>
+          </span>
+        )}
+        <Dial />
+        {ship && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 md:min-h-9"
+            title="Play the scripted emergency: blood oxygen falls for the commander"
+            // "full": the oxygen drifts down first, so LIGHTTIME's time-left warning comes before
+            // the SOS. "stage" drops at once and gives no time left.
+            onClick={() =>
+              shipApi
+                .post("/api/base/scenario/start", { name: "full" })
+                .then(refresh, refresh)
+            }
+          >
+            Start story
+          </Button>
+        )}
         <SimulatedTag />
         <NotifyButton />
         <Button

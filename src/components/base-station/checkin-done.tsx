@@ -5,7 +5,6 @@ import Link from "next/link";
 import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
 import { regionForMetric } from "@/data/regions";
-import { CREW, SEEDED_CHECKINS } from "@/lib/crew";
 import { inSentence } from "@/lib/format";
 import { useMission } from "@/lib/mission-store";
 import type { Crew, MetricKey } from "@/lib/schemas";
@@ -24,12 +23,12 @@ import { metricStates, scoreMetric } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 
 export function CheckinDone({ crew }: { crew: Crew }) {
-  const { state } = useMission();
+  const { state, crew: all, checkedIn } = useMission();
   const record = state.checkins[crew.id];
   if (!record) return null;
 
-  const crewDone = CREW.filter(
-    (c) => SEEDED_CHECKINS.includes(c.id) || state.checkins[c.id],
+  const crewDone = all.filter(
+    (c) => checkedIn.includes(c.id) || state.checkins[c.id],
   ).length;
   const delta = record.pvt_ms - crew.baseline.pvt_ms;
   const pvtState = scoreMetric("pvt_ms", record.pvt_ms, crew.baseline, {
@@ -39,6 +38,7 @@ export function CheckinDone({ crew }: { crew: Crew }) {
   // Score with what was just entered, so this screen agrees with itself.
   const s = metricStates({
     ...crew,
+    live: undefined,
     today: {
       ...crew.today,
       mood: record.mood,
@@ -74,7 +74,7 @@ export function CheckinDone({ crew }: { crew: Crew }) {
         </div>
         <div className="rounded-lg border border-border-soft bg-tile px-3 py-2.5">
           <div className="text-2xl font-bold">
-            Crew {crewDone} of {CREW.length}
+            Crew {crewDone} of {all.length}
           </div>
           <div className="text-xs text-muted-foreground">checked in today</div>
         </div>

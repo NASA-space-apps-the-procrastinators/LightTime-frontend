@@ -19,6 +19,11 @@ WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
+# The ship's address is read when the console is built, not when it runs.
+# Empty: the built-in demo. "/": the ship answers at this site's own address. Or a full address.
+ARG NEXT_PUBLIC_API_URL=""
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 RUN pnpm build
 
 FROM node:22-alpine AS runner

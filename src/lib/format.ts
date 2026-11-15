@@ -1,4 +1,5 @@
 import type { MetricKey } from "@/lib/schemas";
+import { LIVE } from "@/lib/ship-api";
 
 const LABELS: Record<MetricKey, string> = {
   hr_rest: "Resting heart rate",
@@ -33,11 +34,18 @@ export const metricUnit = (m: MetricKey) => UNITS[m];
 export const inSentence = (m: MetricKey) =>
   /O2/.test(LABELS[m]) ? LABELS[m] : LABELS[m].toLowerCase();
 
-/** Local 24-hour HH:MM. */
+/** A time as milliseconds. The ship writes microseconds, which not every browser reads, so they are cut. */
+export function at(iso: string): number {
+  return Date.parse(`${iso.slice(0, 19)}Z`);
+}
+
+/** 24-hour HH:MM. The ship's clock is UTC; the built-in demo uses the browser's zone. */
 export function clock(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-GB", {
+  if (!iso) return "";
+  return new Date(at(iso)).toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: LIVE ? "UTC" : undefined,
   });
 }

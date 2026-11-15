@@ -83,6 +83,7 @@ export function scoreMetric(
 }
 
 export function metricStates(crew: Crew): Record<MetricKey, State> {
+  if (crew.live) return crew.live.metricStates; // the ship scored it, on the real week
   const hasSymptom = crew.today.symptoms.length > 0;
   const out = {} as Record<MetricKey, State>;
   for (const m of METRIC_KEYS) {
@@ -97,5 +98,6 @@ export function metricStates(crew: Crew): Record<MetricKey, State> {
 }
 
 export function crewState(crew: Crew): State {
+  if (crew.live) return crew.live.state; // the ship's answer, which also knows a live emergency
   return worst(Object.values(metricStates(crew)));
 }

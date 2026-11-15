@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertActions } from "@/components/base-station/alert-actions";
 import { AlertSummary } from "@/components/base-station/alert-summary";
 import { GroundThread } from "@/components/base-station/ground-thread";
+import { LightTimeCard } from "@/components/base-station/lighttime-card";
 import { RoundTrip } from "@/components/base-station/round-trip";
 import { Formula } from "@/components/shared/formula";
 import { NotFoundMessage } from "@/components/shared/not-found-message";
@@ -73,6 +74,7 @@ export function AlertDetail({ alertId }: { alertId: string }) {
 
       <div className="flex min-w-0 flex-col gap-4">
         <AlertSummary alert={alert} />
+        <LightTimeCard alert={alert} />
         <RoundTrip alert={alert} />
         <AlertActions alert={alert} />
         <GroundThread alert={alert} />

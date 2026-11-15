@@ -1,24 +1,28 @@
 "use client";
 
 import { Formula } from "@/components/shared/formula";
+import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { StationGauge } from "@/components/shared/station-gauge";
 import { useCountUp } from "@/hooks/use-count-up";
+import { useMission } from "@/lib/mission-store";
 import { STATE_BORDER } from "@/lib/state-styles";
 import { type StationReading, stationReadings } from "@/lib/station";
 import { cn } from "@/lib/utils";
 
 export function StationStrip() {
+  const { station } = useMission();
   return (
     <section
       aria-label="Station environment"
+      title={station?.source}
       className="border-b border-border-soft px-4 py-4 md:px-8"
     >
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         Station
       </h2>
       <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
-        {stationReadings().map((t) => (
-          <StationTile key={t.id} t={t} />
+        {stationReadings(station ?? undefined).map((t) => (
+          <StationTile key={t.id} t={t} live={!!station} />
         ))}
       </div>
     </section>
@@ -28,7 +32,7 @@ export function StationStrip() {
 // "22.4°" → digits after the point and what follows the number, so the count keeps its format.
 const NUMBER = /^(-?\d+)(?:\.(\d+))?(.*)$/;
 
-function StationTile({ t }: { t: StationReading }) {
+function StationTile({ t, live }: { t: StationReading; live: boolean }) {
   // Same duration and easing for both: the number counts from 0 while the needle sweeps
   // its own dial from the left end (a dial can start above 0, e.g. ppO2 at 135).
   const shown = useCountUp(t.value ?? 0);
@@ -72,6 +76,13 @@ function StationTile({ t }: { t: StationReading }) {
               {t.state}
             </span>
           )}
+          {/* Live: each value says whether it is NASA's cabin record or simulated. */}
+          {live &&
+            (t.real ? (
+              <span className="font-semibold text-foreground">NASA record</span>
+            ) : (
+              <SimulatedTag />
+            ))}
         </div>
       </div>
       {t.gauge && t.value !== null && (

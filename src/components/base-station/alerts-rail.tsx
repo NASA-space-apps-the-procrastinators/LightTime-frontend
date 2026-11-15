@@ -5,8 +5,7 @@ import Link from "next/link";
 import { Formula } from "@/components/shared/formula";
 import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
-import { CREW, getCrew, SEEDED_CHECKINS } from "@/lib/crew";
-import { clock, inSentence, metricUnit } from "@/lib/format";
+import { at, clock, inSentence, metricUnit } from "@/lib/format";
 import { type AlertStage, useMission } from "@/lib/mission-store";
 import { allPackets } from "@/lib/packets";
 import { METRIC_KEYS } from "@/lib/schemas";
@@ -23,19 +22,17 @@ const STAGE_TEXT: Record<AlertStage, string> = {
 };
 
 export function AlertsRail() {
-  const { state } = useMission();
+  const { state, crew, checkedIn, station, ship } = useMission();
   const open = state.alerts.filter((a) => a.stage !== "resolved");
-  const watches = CREW.flatMap((c) => {
+  const watches = crew.flatMap((c) => {
     const s = metricStates(c);
     return METRIC_KEYS.filter((m) => s[m] === "WATCH").map((m) => ({
       key: `${c.id}-${m}`,
       title: `${c.name} · ${inSentence(m)} ${metricValue(m, c)} ${metricUnit(m)}`,
     }));
   });
-  const done = CREW.filter(
-    (c) => SEEDED_CHECKINS.includes(c.id) || state.checkins[c.id],
-  );
-  const due = CREW.find((c) => !done.includes(c));
+  const done = crew.filter((c) => checkedIn.includes(c.id));
+  const due = crew.find((c) => !done.includes(c));
 
   return (
     <aside className="flex min-w-0 flex-col gap-4">
@@ -45,8 +42,8 @@ export function AlertsRail() {
       >
         <h2 className="text-[15px] font-semibold">Alerts</h2>
         {open.map((a) => {
-          const crew = getCrew(a.crewId);
-          if (!crew) return null;
+          const person = crew.find((c) => c.id === a.crewId);
+          if (!person) return null;
           return (
             <Link
               key={a.id}
@@ -59,10 +56,14 @@ export function AlertsRail() {
               )}
             >
               <span className="flex items-center gap-2">
-                <StatePill state="ALERT" />
+                <StatePill
+                  state={a.live?.state === "WATCH" ? "WATCH" : "ALERT"}
+                  label={a.live?.state === "SOS" ? "SOS" : undefined}
+                />
                 <strong className="text-[13px]">
-                  {crew.name} · <Formula>{inSentence(a.metric)}</Formula>{" "}
-                  {metricValue(a.metric, crew)} {metricUnit(a.metric)}
+                  {person.name} · <Formula>{inSentence(a.metric)}</Formula>{" "}
+                  {a.live?.value ?? metricValue(a.metric, person)}{" "}
+                  {metricUnit(a.metric)}
                 </strong>
               </span>
               <span className="mt-1 block text-[11px] text-muted-foreground">
@@ -87,7 +88,7 @@ export function AlertsRail() {
             </div>
           </div>
         ))}
-        {stationReadings()
+        {stationReadings(station ?? undefined)
           .filter((r) => r.id === "ppo2" && r.state === "WATCH")
           .map((r) => (
             <div
@@ -140,13 +141,14 @@ export function AlertsRail() {
         <div className="flex justify-between border-b border-border-soft py-1.5 text-[13px]">
           <span>Morning vitals + mood</span>
           <span className="text-muted-foreground">
-            {done.length} / {CREW.length} done
+            {done.length} / {crew.length} done
           </span>
         </div>
         {due && (
           <div className="text-[13px] text-muted-foreground">
             Due:{" "}
-            {CREW.filter((c) => !done.includes(c))
+            {crew
+              .filter((c) => !done.includes(c))
               .map((c) => c.name)
               .join(", ")}
           </div>
@@ -194,7 +196,7 @@ export function AlertsRail() {
           </Link>
         </div>
         <ul className="font-mono text-[11px] leading-relaxed text-muted-foreground">
-          {allPackets(new Date())
+          {allPackets(ship?.now ? new Date(at(ship.now)) : new Date(), crew)
             .slice(0, 5)
             .map((p) => (
               <li key={`${p.crew_id}-${p.metric}`} className="flex gap-2">
