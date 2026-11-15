@@ -25,11 +25,20 @@ export function RoundTrip({ alert }: { alert: Alert }) {
         {STEPS.map((s, i) => {
           const time = s.at(alert);
           const isCurrent = i === current;
+          const last = i === STEPS.length - 1;
+          // The dotted line to the next step is green once that step has happened.
+          const nextDone = !last && Boolean(STEPS[i + 1].at(alert));
           return (
             <li
               key={s.label}
               aria-current={isCurrent ? "step" : undefined}
-              className="flex items-center gap-3 sm:flex-col sm:text-center"
+              className={cn(
+                "relative flex items-start gap-3 sm:flex-col sm:items-center sm:text-center",
+                // Phone: down from this circle to the next. sm+: across, circle edge to circle edge (gap-3 = 12px).
+                !last &&
+                  "after:absolute after:top-[34px] after:-bottom-1.5 after:left-[13px] after:border-l-2 after:border-dotted after:content-[''] sm:after:top-[13px] sm:after:bottom-auto sm:after:left-[calc(50%+20px)] sm:after:w-[calc(100%-28px)] sm:after:border-t-2 sm:after:border-l-0",
+                nextDone ? "after:border-ok" : "after:border-border-strong",
+              )}
             >
               <span
                 aria-hidden
