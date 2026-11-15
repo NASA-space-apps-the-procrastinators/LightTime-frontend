@@ -39,6 +39,9 @@ export function AppHeader() {
   const [lo, hi] = MISSION.mars_light_time_min;
   const audioAvailable = typeof globalThis.AudioContext === "function";
   const soundOn = audioAvailable && state.soundOn;
+  const nav = LIVE
+    ? [...NAV, { label: "Earth", href: "/command-center" }]
+    : NAV;
 
   return (
     <header className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8">
@@ -69,7 +72,7 @@ export function AppHeader() {
         aria-label="Main"
         className="order-last -mx-1 flex w-full gap-5 overflow-x-auto px-1 text-sm lg:order-none lg:w-auto"
       >
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
