@@ -7,8 +7,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { CREW, getCrew, SEEDED_CHECKINS } from "@/lib/crew";
 import { clock, metricLabel, metricUnit } from "@/lib/format";
 import { type AlertStage, useMission } from "@/lib/mission-store";
+import { allPackets } from "@/lib/packets";
 import { METRIC_KEYS } from "@/lib/schemas";
 import { metricStates, metricValue } from "@/lib/scoring";
+import { stationReadings } from "@/lib/station";
 import { cn } from "@/lib/utils";
 
 const STAGE_TEXT: Record<AlertStage, string> = {
@@ -82,6 +84,25 @@ export function AlertsRail() {
             </div>
           </div>
         ))}
+        {stationReadings()
+          .filter((r) => r.id === "ppo2" && r.state === "WATCH")
+          .map((r) => (
+            <div
+              key={r.id}
+              className="rounded-xl border border-watch/60 px-3 py-2.5"
+            >
+              <div className="flex items-center gap-2">
+                <StatePill state="WATCH" />
+                <strong className="text-[13px]">
+                  {r.label} {r.display} {r.unit}
+                </strong>
+              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Slightly above NASA target 145 to 155 mmHg · silent, in the
+                daily summary
+              </div>
+            </div>
+          ))}
         <div className="rounded-xl border border-watch/60 px-3 py-2.5">
           <div className="flex items-center gap-2">
             <StatePill state="WATCH" />
@@ -156,6 +177,31 @@ export function AlertsRail() {
           ))}
         </section>
       )}
+      <section
+        aria-label="Recent packets"
+        className="flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-3.5"
+      >
+        <div className="flex items-center">
+          <h2 className="text-[15px] font-semibold">Recent packets</h2>
+          <Link href="/base-station/log" className="ml-auto text-xs text-link">
+            Full log →
+          </Link>
+        </div>
+        <ul className="font-mono text-[11px] leading-relaxed text-muted-foreground">
+          {allPackets(new Date())
+            .slice(0, 5)
+            .map((p) => (
+              <li key={`${p.crew_id}-${p.metric}`} className="flex gap-2">
+                <span>{clock(p.ts)}</span>
+                <span className="text-foreground">{p.suit_id}</span>
+                <span className="truncate">
+                  {p.metric} {String(p.value)}
+                </span>
+                <span className="ml-auto">{p.state}</span>
+              </li>
+            ))}
+        </ul>
+      </section>
     </aside>
   );
 }

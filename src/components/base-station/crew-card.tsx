@@ -6,6 +6,7 @@ import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
 import { clock } from "@/lib/format";
 import { useMission } from "@/lib/mission-store";
+import { packetsFor } from "@/lib/packets";
 import type { Crew, State } from "@/lib/schemas";
 import { crewState, metricStates, worst } from "@/lib/scoring";
 import { STATE_BAR, STATE_BORDER, TILE_TINT } from "@/lib/state-styles";
@@ -59,8 +60,8 @@ export function CrewCard({ crew }: { crew: Crew }) {
   const { state } = useMission();
   const s = metricStates(crew);
   const overall = crewState(crew);
-  // shortcut: suits send one packet a minute, so the last one is this minute; read it from packets once the log exists.
-  const lastPacket = clock(new Date().toISOString());
+  const packets = packetsFor(crew, new Date());
+  const lastPacket = clock(packets[packets.length - 1].ts);
   const t = crew.today;
   const checkedIn = Boolean(state.checkins[crew.id]);
   const needsCheckin = crew.id === "C1" && !checkedIn;
