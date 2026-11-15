@@ -54,7 +54,6 @@ export function AlertsRail() {
         <section
           style={foldName("rail-alerts")}
           aria-label="Alerts"
-          data-tour="alerts"
           className="flex flex-col gap-2.5 rounded-xl border border-border bg-card px-4 py-3.5"
         >
           <div className="flex items-center justify-between">
