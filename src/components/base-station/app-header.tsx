@@ -77,7 +77,8 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border-soft bg-tile px-4 py-3 md:px-8 dark:bg-background/90 dark:backdrop-blur-md">
       <Link href="/base-station" className="flex min-h-11 items-center">
-        <Logo />
+        {/* Nudged down so the logo's pulse line sits on the menu's text baseline; transform only, no reflow. */}
+        <Logo className="md:translate-y-[5px]" />
       </Link>
 
       <nav
