@@ -18,7 +18,7 @@ import {
   type RegionId,
   regionState,
 } from "@/data/regions";
-import { getCrew, MISSION } from "@/lib/crew";
+import { MISSION } from "@/lib/crew";
 import { metricLabel, metricUnit } from "@/lib/format";
 import { sevenDay } from "@/lib/history";
 import { useMission } from "@/lib/mission-store";
@@ -27,8 +27,8 @@ import { bandFor, crewState, metricStates } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 
 export function AstronautDetail({ crewId }: { crewId: string }) {
-  const crew = getCrew(crewId);
-  const { state } = useMission();
+  const { state, crew: all, ship } = useMission();
+  const crew = all.find((c) => c.id === crewId);
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -69,7 +69,7 @@ export function AstronautDetail({ crewId }: { crewId: string }) {
           </div>
           <p className="text-xs text-muted-foreground">
             {crew.role} · suit {crew.suit_id} · baseline set L-60 ·{" "}
-            {MISSION.mission_day} days in flight
+            {ship?.mission_day ?? MISSION.mission_day} days in flight
           </p>
         </div>
         {openAlert && (

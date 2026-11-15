@@ -54,7 +54,23 @@ export const crewSchema = z.object({
     dose_mSv_mission: z.number(),
   }),
 });
-export type Crew = z.infer<typeof crewSchema>;
+/** What the ship worked out for a crew member. Only present in live mode. */
+export type LiveCrew = {
+  state: State;
+  metricStates: Record<MetricKey, State>;
+  /** Seven daily values for a metric, oldest first, where the ship has them. */
+  week: Partial<Record<MetricKey, number[]>>;
+  lastPacketAt: string | null;
+  /** The newest one-a-second reading from the suit, if there is one. */
+  latest: {
+    at: string;
+    heartRate: number | null;
+    spo2: number | null;
+    skinTemp: number | null;
+    signalOk: boolean;
+  } | null;
+};
+export type Crew = z.infer<typeof crewSchema> & { live?: LiveCrew };
 
 export const packetSchema = z.object({
   crew_id: z.string(),

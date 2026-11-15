@@ -4,7 +4,9 @@ import { Check, Send, ThumbsUp } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { GROUND, MISSION } from "@/lib/crew";
+import { clock } from "@/lib/format";
 import { type Alert, type AlertStage, useMission } from "@/lib/mission-store";
+import { span } from "@/lib/ship-api";
 
 const [LO, HI] = MISSION.mars_light_time_min;
 
@@ -18,10 +20,23 @@ const STATUS: Record<AlertStage, string> = {
 };
 
 export function AlertActions({ alert }: { alert: Alert }) {
-  const { dispatch } = useMission();
+  const { dispatch, ship } = useMission();
   const status = useRef<HTMLOutputElement>(null);
   const acted = useRef(false);
   const now = () => new Date().toISOString();
+
+  function statusLine(): string {
+    if (!ship || !alert.live) return STATUS[alert.stage];
+    if (alert.stage === "sent") {
+      const earliest = alert.live.timeline.earliest_reply_at;
+      return ship.link_up
+        ? `Sent. Earth is ${span(ship.delay_s)} away. Earliest possible reply: ${earliest ? clock(earliest) : `in ${span(ship.round_trip_s)}`}.`
+        : "Sent. No link to Earth right now: any reply waits for the link.";
+    }
+    if (alert.stage === "acknowledged" && !ship.link_up)
+      return "Acknowledged. No link to Earth: a report sent now is queued and leaves when the link returns.";
+    return STATUS[alert.stage];
+  }
 
   const primary = {
     raised: { label: "Acknowledge", icon: Check, type: "acknowledge" },
@@ -54,7 +69,7 @@ export function AlertActions({ alert }: { alert: Alert }) {
         tabIndex={-1}
         className="block rounded-xl border border-border bg-card px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        {STATUS[alert.stage]}
+        {statusLine()}
       </output>
       {p && (
         <div>

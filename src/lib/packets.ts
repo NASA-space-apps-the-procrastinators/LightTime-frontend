@@ -59,10 +59,10 @@ export function packetsFor(crew: Crew, now: Date): Packet[] {
 }
 
 /** Every crewmember's packets, newest first. */
-export function allPackets(now: Date): Packet[] {
-  return CREW.flatMap((c) => packetsFor(c, now)).sort((a, b) =>
-    b.ts.localeCompare(a.ts),
-  );
+export function allPackets(now: Date, crew: Crew[] = CREW): Packet[] {
+  return crew
+    .flatMap((c) => packetsFor(c, now))
+    .sort((a, b) => b.ts.localeCompare(a.ts));
 }
 
 /** Lowest signal quality per sensor. */

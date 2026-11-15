@@ -1,24 +1,29 @@
+"use client";
+
 import { SimulatedTag } from "@/components/shared/simulated-tag";
 import { StatePill } from "@/components/shared/state-pill";
 import { StationGauge } from "@/components/shared/station-gauge";
+import { useMission } from "@/lib/mission-store";
 import { STATE_BORDER } from "@/lib/state-styles";
 import { stationReadings } from "@/lib/station";
 import { cn } from "@/lib/utils";
 
 export function StationStrip() {
+  const { station } = useMission();
   return (
     <section
       aria-label="Station environment"
+      title={station?.source}
       className="border-b border-border-soft px-4 py-4 md:px-8"
     >
       <div className="mb-2 flex items-center gap-2">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Station
         </h2>
-        <SimulatedTag />
+        {!station && <SimulatedTag />}
       </div>
       <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
-        {stationReadings().map((t) => (
+        {stationReadings(station ?? undefined).map((t) => (
           <div
             key={t.id}
             data-testid={`tile-${t.id}`}
@@ -43,6 +48,14 @@ export function StationStrip() {
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                 <span>{t.note}</span>
                 <StatePill state={t.state} />
+                {station &&
+                  (t.real ? (
+                    <span className="font-semibold text-foreground">
+                      NASA record
+                    </span>
+                  ) : (
+                    <SimulatedTag />
+                  ))}
               </div>
             </div>
             {t.gauge && t.value !== null && (

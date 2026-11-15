@@ -1,12 +1,13 @@
+"use client";
+
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { StatePill } from "@/components/shared/state-pill";
 import { TrendChart } from "@/components/shared/trend-chart";
 import { regionForMetric } from "@/data/regions";
-import { getCrew } from "@/lib/crew";
 import { metricLabel, metricUnit } from "@/lib/format";
 import { daysOutOfBand, sevenDay } from "@/lib/history";
-import type { Alert } from "@/lib/mission-store";
+import { type Alert, useMission } from "@/lib/mission-store";
 import type { MetricKey } from "@/lib/schemas";
 import { bandFor, metricStates, metricValue } from "@/lib/scoring";
 import { ruleFor } from "@/lib/thresholds";
@@ -16,7 +17,7 @@ const ORDINAL = ["", "1st", "2nd", "3rd"];
 const ALSO: MetricKey[] = ["temp_c", "sleep_h", "spo2", "resp"];
 
 export function AlertSummary({ alert }: { alert: Alert }) {
-  const crew = getCrew(alert.crewId);
+  const crew = useMission().crew.find((c) => c.id === alert.crewId);
   if (!crew) return null;
   const m = alert.metric;
   const resolved = alert.stage === "resolved";
@@ -26,6 +27,8 @@ export function AlertSummary({ alert }: { alert: Alert }) {
   const series = sevenDay(crew, m);
   const days = band ? daysOutOfBand(series, band) : 0;
   const rule = ruleFor(m);
+  const live = alert.live;
+  const fromShipAi = live?.raised_by === "lighttime";
   const states = metricStates(crew);
   const also = ALSO.filter((x) => x !== m && states[x] !== "OK").map(
     (x) =>
@@ -49,9 +52,14 @@ export function AlertSummary({ alert }: { alert: Alert }) {
         {resolved ? (
           <StatePill state="OK" label="RESOLVED" />
         ) : (
-          <StatePill state="ALERT" />
+          <StatePill
+            state={live?.state === "WATCH" ? "WATCH" : "ALERT"}
+            label={live?.state === "SOS" ? "SOS" : undefined}
+          />
         )}
-        <h2 className="font-heading text-lg font-semibold">{headline}</h2>
+        <h2 className="font-heading text-lg font-semibold">
+          {live ? live.reason : headline}
+        </h2>
         <Link
           href={`/base-station/crew/${crew.id}?region=${regionForMetric(m)}`}
           className="ml-auto inline-flex items-center gap-1 text-[13px] text-link"
@@ -67,33 +75,43 @@ export function AlertSummary({ alert }: { alert: Alert }) {
         <div className="rounded-lg border border-border-soft bg-card px-3 py-2.5">
           <dt className="text-[11px] text-muted-foreground">Current</dt>
           <dd className="text-2xl font-bold text-alert">
-            {value} {unit}
+            {live?.value ?? value} {live?.unit ?? unit}
           </dd>
         </div>
-        <div className="rounded-lg border border-border-soft bg-card px-3 py-2.5">
-          <dt className="text-[11px] text-muted-foreground">Baseline (L-60)</dt>
-          <dd className="text-lg font-bold">
-            {band ? `${band[0]} to ${band[1]} ${unit}` : "No band"}
-          </dd>
-        </div>
+        {!fromShipAi && (
+          <div className="rounded-lg border border-border-soft bg-card px-3 py-2.5">
+            <dt className="text-[11px] text-muted-foreground">
+              Baseline (L-60)
+            </dt>
+            <dd className="text-lg font-bold">
+              {band ? `${band[0]} to ${band[1]} ${unit}` : "No band"}
+            </dd>
+          </div>
+        )}
         <div className="rounded-lg border border-border-soft bg-card px-3 py-2.5">
           <dt className="text-[11px] text-muted-foreground">Rule tripped</dt>
-          <dd className="text-[13px] font-semibold">{rule.alert}</dd>
-        </div>
-        <div className="rounded-lg border border-border-soft bg-card px-3 py-2.5">
-          <dt className="text-[11px] text-muted-foreground">Also seen</dt>
           <dd className="text-[13px] font-semibold">
-            {also.length ? also.join(" · ") : "Nothing else out of band"}
+            {live?.rule ?? rule.alert}
           </dd>
         </div>
+        {!fromShipAi && (
+          <div className="rounded-lg border border-border-soft bg-card px-3 py-2.5">
+            <dt className="text-[11px] text-muted-foreground">Also seen</dt>
+            <dd className="text-[13px] font-semibold">
+              {also.length ? also.join(" · ") : "Nothing else out of band"}
+            </dd>
+          </div>
+        )}
       </dl>
 
-      <TrendChart
-        series={series}
-        band={band}
-        unit={unit}
-        label={`${metricLabel(m)}, last 7 days`}
-      />
+      {!fromShipAi && (
+        <TrendChart
+          series={series}
+          band={band}
+          unit={unit}
+          label={`${metricLabel(m)}, last 7 days`}
+        />
+      )}
 
       {alert.symptoms.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -109,7 +127,9 @@ export function AlertSummary({ alert }: { alert: Alert }) {
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground">Source: {rule.source}</p>
+      <p className="text-xs text-muted-foreground">
+        Source: {live?.source ?? rule.source}
+      </p>
     </section>
   );
 }

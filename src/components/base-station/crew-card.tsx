@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { StatePill } from "@/components/shared/state-pill";
 import { buttonVariants } from "@/components/ui/button";
-import { clock } from "@/lib/format";
+import { at, clock } from "@/lib/format";
 import { useMission } from "@/lib/mission-store";
 import { packetsFor } from "@/lib/packets";
 import type { Crew, State } from "@/lib/schemas";
@@ -56,15 +56,42 @@ function Tile({
   );
 }
 
+/** The newest one-a-second reading from the suit: what LIGHTTIME is judging right now. */
+function SuitNow({ crew, now }: { crew: Crew; now?: string }) {
+  const reading = crew.live?.latest;
+  if (!reading) return null;
+  const fresh = now ? at(now) - at(reading.at) <= 30_000 : true;
+  const values = [
+    reading.heartRate !== null && `${Math.round(reading.heartRate)} bpm`,
+    reading.spo2 !== null && `SpO2 ${Math.round(reading.spo2)} %`,
+    reading.skinTemp !== null && `skin ${reading.skinTemp.toFixed(1)} °C`,
+  ].filter(Boolean);
+  return (
+    <p data-testid="suit-now" className="text-xs">
+      <span className="font-semibold">
+        {fresh ? "Suit now" : "Last suit reading"}
+      </span>{" "}
+      {reading.signalOk
+        ? values.join(" · ")
+        : "no clean signal: check the sensor"}
+      <span className="text-muted-foreground">
+        {" "}
+        · {reading.at.slice(11, 19)} UTC
+      </span>
+    </p>
+  );
+}
+
 export function CrewCard({ crew }: { crew: Crew }) {
-  const { state } = useMission();
+  const { state, checkedIn: done, ship } = useMission();
   const s = metricStates(crew);
   const overall = crewState(crew);
   const packets = packetsFor(crew, new Date());
-  const lastPacket = clock(packets[packets.length - 1].ts);
+  const lastPacket = clock(
+    crew.live?.lastPacketAt ?? packets[packets.length - 1].ts,
+  );
   const t = crew.today;
-  const checkedIn = Boolean(state.checkins[crew.id]);
-  const needsCheckin = crew.id === "C1" && !checkedIn;
+  const needsCheckin = !done.includes(crew.id);
   const pulsing = state.alerts.some(
     (a) => a.crewId === crew.id && a.stage === "raised",
   );
@@ -145,6 +172,7 @@ export function CrewCard({ crew }: { crew: Crew }) {
           />
         </div>
 
+        <SuitNow crew={crew} now={ship?.now} />
         <p className="text-xs text-muted-foreground">{crew.note}</p>
 
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">

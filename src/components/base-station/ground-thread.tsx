@@ -9,7 +9,10 @@ import { type Alert, useMission } from "@/lib/mission-store";
 import { cn } from "@/lib/utils";
 
 export function GroundThread({ alert }: { alert: Alert }) {
-  const { state, dispatch } = useMission();
+  const { state, dispatch, ship } = useMission();
+  const thread = state.thread.filter(
+    (m) => !m.alertId || m.alertId === alert.id,
+  );
   const [text, setText] = useState("");
   const id = useId();
   const author = getCrew(alert.crewId)?.name ?? "Crew";
@@ -21,20 +24,22 @@ export function GroundThread({ alert }: { alert: Alert }) {
     >
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-[15px] font-semibold">
-          Thread with ground · Flight surgeon on console:{" "}
-          {GROUND.flight_surgeon}
+          Thread with ground
+          {!ship && <> · Flight surgeon on console: {GROUND.flight_surgeon}</>}
         </h2>
-        <SimulatedTag label="SIMULATED flight surgeon" className="ml-auto" />
+        {!ship && (
+          <SimulatedTag label="SIMULATED flight surgeon" className="ml-auto" />
+        )}
       </div>
 
       <div aria-live="polite">
-        {state.thread.length === 0 ? (
+        {thread.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nothing sent yet. Send the alert to start the thread.
           </p>
         ) : (
           <ul className="flex flex-col gap-2.5">
-            {state.thread.map((m) => (
+            {thread.map((m) => (
               <li
                 key={m.id}
                 className={cn(
@@ -49,6 +54,11 @@ export function GroundThread({ alert }: { alert: Alert }) {
                     {m.author}
                   </span>
                   {clock(m.at)}
+                  {m.status && m.status !== "delivered" && (
+                    <span>
+                      {m.status === "queued" ? "queued, no link" : "on its way"}
+                    </span>
+                  )}
                 </span>
                 {m.text}
               </li>
@@ -67,6 +77,7 @@ export function GroundThread({ alert }: { alert: Alert }) {
             text,
             author,
             at: new Date().toISOString(),
+            alertId: alert.id,
           });
           setText("");
         }}
