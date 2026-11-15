@@ -386,6 +386,18 @@ export const ship = {
     z
       .object({ running: z.boolean(), interval_s: z.number() })
       .parse(await request("/api/earth/feed")),
+  /** The guided tour's live bubble: where the running story is, in the ship's own words. */
+  tour: async () =>
+    z
+      .object({
+        running: z.boolean(),
+        step: z.number(),
+        of: z.number(),
+        title: z.string().nullable(),
+        text: z.string().nullable(),
+        anchor: z.string().nullable(),
+      })
+      .parse(await request("/api/base/tour")),
   post: (path: string, body?: unknown) =>
     request(path, { method: "POST", body: JSON.stringify(body ?? {}) }),
 };

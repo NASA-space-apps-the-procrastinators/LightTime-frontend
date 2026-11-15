@@ -21,11 +21,12 @@ import { SuitsButton } from "@/components/base-station/suits-button";
 import { ThemeToggle } from "@/components/base-station/theme-toggle";
 import { Logo } from "@/components/shared/logo";
 import { SimulatedTag } from "@/components/shared/simulated-tag";
+import { useTour } from "@/components/shared/tour";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { clearNotifications } from "@/hooks/use-notifications";
 import { MISSION } from "@/lib/crew";
 import { useMission } from "@/lib/mission-store";
-import { LIVE, ship as shipApi, span } from "@/lib/ship-api";
+import { LIVE, span } from "@/lib/ship-api";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -56,7 +57,8 @@ function isActive(pathname: string, href: string) {
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { state, dispatch, ship, online, refresh } = useMission();
+  const { state, dispatch, ship, online } = useMission();
+  const tour = useTour();
   const [lo, hi] = MISSION.mars_light_time_min;
   const audioAvailable = typeof globalThis.AudioContext === "function";
   const soundOn = audioAvailable && state.soundOn;
@@ -199,12 +201,16 @@ export function AppHeader() {
       {ship && (
         // Live: the link gets its own row, so the dial and the story never squeeze the nav.
         // Phones: one line that scrolls sideways, so the pinned header stays short.
-        <div className="order-last -mx-4 flex w-[calc(100%+2rem)] items-center gap-x-4 gap-y-2 overflow-x-auto border-t border-border-soft px-4 pt-2.5 text-[13px] text-muted-foreground md:mx-0 md:w-full md:flex-wrap md:overflow-visible md:px-0">
+        <div
+          data-tour="ship-row"
+          className="order-last -mx-4 flex w-[calc(100%+2rem)] items-center gap-x-4 gap-y-2 overflow-x-auto border-t border-border-soft px-4 pt-2.5 text-[13px] text-muted-foreground md:mx-0 md:w-full md:flex-wrap md:overflow-visible md:px-0"
+        >
           <span className="hidden md:inline">
             {ship.platform} · Mission day{" "}
             <strong className="text-foreground">{ship.mission_day}</strong>
           </span>
           <span
+            data-tour="earth"
             className={cn(
               "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1",
               ship.link_up ? "border-border" : "border-alert text-alert",
@@ -234,14 +240,8 @@ export function AppHeader() {
             variant="outline"
             size="sm"
             className="min-h-11 shrink-0 md:ml-auto md:min-h-9"
-            title="Play the scripted emergency: blood oxygen falls for the commander"
-            // "full": the oxygen drifts down first, so LIGHTTIME's time-left warning comes before
-            // the SOS. "stage" drops at once and gives no time left.
-            onClick={() =>
-              shipApi
-                .post("/api/base/scenario/start", { name: "full" })
-                .then(refresh, refresh)
-            }
+            title="A click-through tour of the console, ending with a live emergency at Mars distance"
+            onClick={tour.start}
           >
             Start story
           </Button>

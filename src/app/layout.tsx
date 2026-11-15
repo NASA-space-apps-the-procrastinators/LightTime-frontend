@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
+import { TourProvider } from "@/components/shared/tour";
 import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -39,7 +40,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <TourProvider>{children}</TourProvider>
+      </body>
     </html>
   );
 }

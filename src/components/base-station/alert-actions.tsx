@@ -63,7 +63,7 @@ export function AlertActions({ alert }: { alert: Alert }) {
   }, [p]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div data-tour="alert-actions" className="flex flex-col gap-3">
       <output
         ref={status}
         tabIndex={-1}

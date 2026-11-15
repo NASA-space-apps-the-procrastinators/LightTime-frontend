@@ -39,7 +39,10 @@ export function CheckinFlow({ crewId }: { crewId: string }) {
         <CheckinStepper step={step} onSelect={setStep} />
       </section>
       <div className="grid gap-6 px-4 py-6 md:px-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="min-w-0 rounded-xl border border-border bg-card p-5">
+        <section
+          data-tour="checkin"
+          className="min-w-0 rounded-xl border border-border bg-card p-5"
+        >
           {step === 1 && <CheckinCuff onDone={() => setStep(2)} />}
           {step === 2 && (
             <CheckinCapture
