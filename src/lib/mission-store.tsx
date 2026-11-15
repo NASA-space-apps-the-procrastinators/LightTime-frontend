@@ -7,12 +7,19 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { z } from "zod";
 import { GROUND, getCrew } from "@/lib/crew";
 import { type Checkin, checkinSchema, METRIC_KEYS } from "@/lib/schemas";
-import { shipAlertSchema } from "@/lib/ship-api";
+import {
+  LIVE,
+  pull,
+  type ShipState,
+  ship,
+  shipAlertSchema,
+} from "@/lib/ship-api";
 
 const STAGES = [
   "raised",
@@ -249,17 +256,110 @@ export function loadMission(raw: string | null, now: Date): MissionState {
 const MissionContext = createContext<{
   state: MissionState;
   dispatch: Dispatch<Action>;
+  /** The ship's state: stop, light time, who decides. Null in seed mode or while the ship is unreachable. */
+  ship: ShipState | null;
+  /** False in live mode when the ship cannot be reached: the console is then on its seed. */
+  online: boolean;
+  refresh: () => void;
 } | null>(null);
+
+/** What an action asks of the ship. Null for actions that stay in the browser. */
+function shipRequest(
+  action: Action,
+  state: MissionState,
+): Promise<unknown> | null {
+  const by = (alertId: string) => {
+    const alert = state.alerts.find((a) => a.id === alertId);
+    return (alert && getCrew(alert.crewId)?.name) ?? "Crew";
+  };
+  switch (action.type) {
+    case "acknowledge":
+      return ship.post(`/api/base/alerts/${action.alertId}/ack`, {
+        by: by(action.alertId),
+      });
+    case "sendToGround":
+      return ship.post(`/api/base/alerts/${action.alertId}/send`);
+    case "acceptPlan":
+      return ship.post(`/api/base/alerts/${action.alertId}/accept-plan`, {
+        by: by(action.alertId),
+      });
+    case "postMessage":
+      return ship.post("/api/base/messages", {
+        text: action.text.trim(),
+        from: action.author,
+        alert_id: action.alertId,
+      });
+    case "completeCheckin":
+      return ship.post(`/api/base/crew/${action.crewId}/checkins`, {
+        ...action.checkin,
+        pvt_ms: Math.round(action.pvt_ms),
+      });
+    case "reset":
+      return ship.post("/api/base/reset");
+    default:
+      return null; // sound is local; a reply arrives through the link, never from a timer
+  }
+}
 
 export function MissionProvider({ children }: { children: ReactNode }) {
   // Null until loaded in the browser: the demo's clock and saved state exist only there.
   const [state, setState] = useState<MissionState | null>(null);
+  const [shipState, setShipState] = useState<ShipState | null>(null);
+  const [online, setOnline] = useState(false);
+  const latest = useRef<MissionState | null>(null);
+  const busy = useRef(false);
+  latest.current = state;
+
+  const refresh = useCallback(() => {
+    if (!LIVE || busy.current) return;
+    busy.current = true;
+    pull()
+      .then(({ state: fromShip, mission }) => {
+        setShipState(fromShip);
+        setOnline(true);
+        // Sound and this session's check-ins are the browser's. Everything else is the ship's.
+        setState((s) => ({
+          soundOn: s?.soundOn ?? false,
+          checkins: s?.checkins ?? {},
+          ...mission,
+        }));
+      })
+      .catch(() => {
+        setOnline(false);
+        setShipState(null);
+        // First load with no ship: fall back to the built-in demo so the console is never blank.
+        setState((s) => s ?? createInitialMission(new Date()));
+      })
+      .finally(() => {
+        busy.current = false;
+      });
+  }, []);
+
   const dispatch = useCallback<Dispatch<Action>>(
-    (action) => setState((s) => s && missionReducer(s, action)),
-    [],
+    (action) => {
+      const live = LIVE && online && latest.current !== null;
+      // A reply arrives through the link, never from the built-in demo's timer.
+      if (live && action.type === "receiveReply") return;
+      const request =
+        live && latest.current ? shipRequest(action, latest.current) : null;
+      // With no request the action is local: everything in seed mode, sound in live mode.
+      // A check-in is both: the summary screen reads it from the store, and the ship gets a copy.
+      if (!request || action.type === "completeCheckin")
+        setState((s) => s && missionReducer(s, action));
+      // The ship reloads the morning on a restart, so this session's check-ins go with it.
+      else if (action.type === "reset")
+        setState((s) => s && { ...s, checkins: {} });
+      if (request) request.then(refresh, refresh);
+    },
+    [online, refresh],
   );
 
   useEffect(() => {
+    if (LIVE) {
+      refresh();
+      const timer = setInterval(refresh, 1000);
+      return () => clearInterval(timer);
+    }
     let raw: string | null = null;
     try {
       raw = localStorage.getItem(STORAGE_KEY);
@@ -267,10 +367,10 @@ export function MissionProvider({ children }: { children: ReactNode }) {
       // storage blocked (private mode): run without persistence
     }
     setState(loadMission(raw, new Date()));
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
-    if (!state) return;
+    if (!state || LIVE) return; // in live mode the ship remembers, not the browser
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
@@ -286,7 +386,9 @@ export function MissionProvider({ children }: { children: ReactNode }) {
     );
 
   return (
-    <MissionContext.Provider value={{ state, dispatch }}>
+    <MissionContext.Provider
+      value={{ state, dispatch, ship: shipState, online, refresh }}
+    >
       {children}
     </MissionContext.Provider>
   );
