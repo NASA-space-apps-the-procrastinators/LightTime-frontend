@@ -75,6 +75,7 @@ export function AlertActions({ alert }: { alert: Alert }) {
         <div>
           <Button
             className="min-h-11"
+            data-stat={`Alert: ${p.label}`}
             onClick={(e) => {
               // The same spot becomes the next step's button: a double-click must not press it too.
               if (e.detail > 1) return;

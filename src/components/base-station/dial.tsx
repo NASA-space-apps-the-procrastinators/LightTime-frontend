@@ -18,6 +18,7 @@ export function Dial() {
             key={s.stop}
             type="button"
             aria-pressed={here}
+            data-stat={`Dial: ${s.label}`}
             onClick={() =>
               shipApi
                 .post("/api/base/dial", { stop: s.stop })

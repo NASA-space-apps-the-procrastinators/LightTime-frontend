@@ -253,6 +253,7 @@ export function AppHeader() {
               "min-h-11 shrink-0 md:ml-auto md:min-h-9",
               !storySeen && "border-beam",
             )}
+            data-stat="Start story"
             title="A click-through tour of the console, ending with a live emergency at Mars distance"
             onClick={() => {
               try {
